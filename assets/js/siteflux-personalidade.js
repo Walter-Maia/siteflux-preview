@@ -344,6 +344,120 @@
     if (pilha) { pilha.addEventListener('click', function () { openGallery(li, summary); }); }
   });
 
+  /* ------------------------------------------------------------------
+     Projetos em carrossel de capas: a capa do projeto da vez grande no centro, as vizinhas menores, mais baixas, levemente
+     giradas e escurecidas. Um índice só (atual) governa posições, indicadores e contador; setas, indicadores, teclado
+     (← →), clique numa vizinha e arraste mexem nele. O anel dá a volta: cada item fica no deslocamento mais curto até o
+     centro, e quem precisa atravessar o palco por trás "salta" sem transição (está invisível nesse momento). As capas
+     fora do centro ficam inertes (o foco não entra nelas); um arraste nunca vira clique.
+     ------------------------------------------------------------------ */
+  (function sliderPastas() {
+    var lista = document.querySelector('.pastas');
+    var itens = lista ? Array.prototype.slice.call(lista.querySelectorAll('.pasta')) : [];
+    if (itens.length < 3) { return; }
+    var janela = document.createElement('div');
+    janela.className = 'pastas-janela';
+    lista.parentNode.insertBefore(janela, lista);
+    janela.appendChild(lista);
+    lista.classList.add('is-slider');
+    // a entrada por seção esconderia as capas que começam fora da janela (o observador nunca as "vê")
+    itens.forEach(function (li) { li.removeAttribute('data-reveal'); li.classList.remove('reveal-pending'); });
+    var nav = document.createElement('div');
+    nav.className = 'pastas-nav';
+    nav.innerHTML = '<span class="pastas-conta" aria-hidden="true"></span><span class="pastas-pontos"></span>' +
+      '<span class="pastas-setas"><button class="pastas-seta" type="button" data-dir="-1" aria-label="Projeto anterior">' + ICON_PREV + '</button>' +
+      '<button class="pastas-seta" type="button" data-dir="1" aria-label="Próximo projeto">' + ICON_NEXT + '</button></span>' +
+      '<span class="sr-only" aria-live="polite"></span>';
+    janela.parentNode.insertBefore(nav, janela.nextSibling);
+    var conta = nav.querySelector('.pastas-conta'), pontos = nav.querySelector('.pastas-pontos'), status = nav.querySelector('[aria-live]');
+    var n = itens.length, atual = 0, drag = null, engolir = false, antes = [];
+    itens.forEach(function (li, i) {
+      var b = document.createElement('button'), h = li.querySelector('h3');
+      b.type = 'button'; b.className = 'pastas-ponto';
+      b.setAttribute('aria-label', 'Ir para o projeto ' + (i + 1) + ' de ' + n + (h ? ': ' + h.textContent : ''));
+      b.addEventListener('click', function () { ir(i, true); });
+      pontos.appendChild(b);
+    });
+    function desloc(i, pos) { var o = (((i - pos) % n) + n) % n; if (o > n / 2) { o -= n; } return o; }
+    function coloca(pos) { // pos pode ser fracionário durante o arraste
+      itens.forEach(function (li, i) {
+        var o = desloc(i, pos), a = Math.abs(o), salto = antes[i] !== undefined && Math.abs(o - antes[i]) > 1.5;
+        if (salto) { li.classList.add('is-salto'); }
+        li.style.transform = 'translate3d(' + (o * 106).toFixed(2) + '%,' + (Math.min(a, 1.6) * 8).toFixed(2) + '%,0) rotate(' + (Math.max(-1.6, Math.min(1.6, o)) * 3).toFixed(2) + 'deg) scale(' + (1 - Math.min(a, 1.6) * 0.1).toFixed(3) + ')';
+        li.style.filter = 'brightness(' + (1 - Math.min(a, 1) * 0.42).toFixed(2) + ')';
+        li.style.opacity = a > 1.6 ? '0' : '1';
+        li.style.zIndex = String(10 - Math.round(a * 2));
+        if (salto) { void li.offsetWidth; li.classList.remove('is-salto'); }
+        antes[i] = o;
+      });
+    }
+    function mede() { // o trilho é absoluto: a altura vem da capa mais alta (com o texto)
+      var h = 0;
+      itens.forEach(function (li) { h = Math.max(h, li.offsetHeight); });
+      lista.style.height = Math.ceil(h * 1.04) + 'px';
+    }
+    function pinta() {
+      coloca(atual);
+      itens.forEach(function (li, i) {
+        li.classList.toggle('is-atual', i === atual);
+        if (i === atual) { li.removeAttribute('inert'); } else { li.setAttribute('inert', ''); }
+      });
+      Array.prototype.forEach.call(pontos.children, function (b, i) { if (i === atual) { b.setAttribute('aria-current', 'true'); } else { b.removeAttribute('aria-current'); } });
+      conta.textContent = pad2(atual + 1) + ' / ' + pad2(n);
+    }
+    function ir(i, anunciar) {
+      atual = ((i % n) + n) % n;
+      pinta();
+      if (anunciar) { var h = itens[atual].querySelector('h3'); status.textContent = 'Projeto ' + (atual + 1) + ' de ' + n + (h ? ': ' + h.textContent : ''); }
+    }
+    Array.prototype.forEach.call(nav.querySelectorAll('.pastas-seta'), function (b) {
+      b.addEventListener('click', function () { ir(atual + Number(b.getAttribute('data-dir')), true); });
+    });
+    janela.addEventListener('keydown', function (e) {
+      if (e.altKey || e.ctrlKey || e.metaKey) { return; }
+      if (e.key === 'ArrowRight') { ir(atual + 1, true); e.preventDefault(); } else if (e.key === 'ArrowLeft') { ir(atual - 1, true); e.preventDefault(); }
+    });
+    janela.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) { return; }
+      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, on: false, dx: 0 };
+    });
+    janela.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) { return; }
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.on) {
+        if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) { return; }
+        drag.on = true; lista.classList.add('is-dragging'); janela.classList.add('is-dragging');
+      }
+      drag.dx = dx;
+      coloca(atual - dx / Math.max(1, itens[0].offsetWidth * 1.06));
+    });
+    var solta = function (e) {
+      if (!drag || (e && e.pointerId !== drag.id)) { return; }
+      var d = drag; drag = null;
+      lista.classList.remove('is-dragging'); janela.classList.remove('is-dragging');
+      if (!d.on) {
+        // clique fora da capa do centro (as vizinhas são inertes, então o alvo é a janela): vai para o lado clicado
+        if (e && e.type === 'pointerup' && !(e.target.closest && e.target.closest('.pasta.is-atual'))) {
+          var box = janela.getBoundingClientRect(), meio = box.left + box.width / 2, metade = itens[0].offsetWidth / 2;
+          if (e.clientX < meio - metade) { ir(atual - 1, true); } else if (e.clientX > meio + metade) { ir(atual + 1, true); }
+        }
+        return;
+      }
+      engolir = true; setTimeout(function () { engolir = false; }, 60);
+      var passos = Math.round(-d.dx / Math.max(1, itens[0].offsetWidth * 1.06));
+      if (!passos && Math.abs(d.dx) > Math.min(120, janela.clientWidth * 0.12)) { passos = d.dx < 0 ? 1 : -1; }
+      ir(atual + passos, !!passos);
+    };
+    janela.addEventListener('pointerup', solta);
+    janela.addEventListener('pointercancel', solta);
+    janela.addEventListener('click', function (e) { if (engolir) { e.stopPropagation(); e.preventDefault(); } }, true);
+    janela.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    window.addEventListener('resize', mede);
+    window.addEventListener('load', mede);
+    if ('ResizeObserver' in window) { new ResizeObserver(mede).observe(itens[0]); }
+    pinta(); mede();
+  })();
+
   /* "5 telas" sai da contagem real das figuras de cada pasta */
   Array.prototype.forEach.call(document.querySelectorAll('.pasta'), function (li) {
     var out = li.querySelector('.pasta-telas'), n = li.querySelectorAll('.pasta-previa').length;

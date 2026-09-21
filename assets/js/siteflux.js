@@ -408,7 +408,7 @@
 
     function render() {
       if (!stageW) return;
-      var ambient = !still && !hover;
+      var ambient = !still; // no hover o balanço congela onde está (phase para de avançar); zerá-lo fazia as peças pularem
       for (var i = 0; i < n; i++) {
         var diff = mod(i - pos);
         if (diff > n / 2) diff -= n;
@@ -435,8 +435,7 @@
       if (!canRun()) return;
       var dt = Math.min(0.05, (now - (last || now)) / 1000);
       last = now;
-      if (!hover) pos += DRIFT * dt;
-      phase += 1.08 * dt;
+      if (!hover) { pos += DRIFT * dt; phase += 1.08 * dt; }
       render();
       raf = requestAnimationFrame(tick);
     }
@@ -619,7 +618,7 @@
     sync();
   })();
 
-  /* ---------- Painel que se monta no scroll (#como-funciona) ----------
+  /* ---------- Peças que se montam no scroll (#como-funciona: os quatro passos) ----------
      Cada peça [data-fly="x,y,giro,ordem"] nasce fora da tela e entra UMA DE CADA VEZ conforme o
      scroll: o transform é função direta do pixel rolado, sem transição. Movimento limpo: percurso
      reto, giro mínimo, sem mudança forte de escala.
@@ -631,7 +630,7 @@
   (function bento() {
     var pin = document.querySelector('[data-bento]');
     if (!pin) return;
-    var grid = pin.querySelector('.bento-grid');
+    var grid = pin.querySelector('[data-bento-grid]');
     var tiles = Array.prototype.slice.call(pin.querySelectorAll('[data-fly]')).map(function (el) {
       var v = (el.getAttribute('data-fly') || '0,0,0,0').split(',').map(Number);
       return { el: el, x: v[0] || 0, y: v[1] || 0, r: v[2] || 0, i: v[3] || 0, top: 0, mid: 0, h: 0 };
@@ -656,10 +655,12 @@
         if (r.top > vh * 1.3 || r.bottom < -vh * 0.3) return;
         // começa quando o título já saiu de cena e termina a 85 % do trecho preso: o resto é para olhar
         var p = clamp((vh * 0.25 - r.top) / (vh * 0.25 + total * 0.85));
+        pin.style.setProperty('--bento-p', p.toFixed(4)); // a linha que liga os passos se desenha junto
         tiles.forEach(function (t) { place(t, ease(clamp((p - t.i * STEP) / SPAN)), t.x / 100 * vw, t.y / 100 * vh); });
       } else {
         var g = grid.getBoundingClientRect();
         if (g.top > vh * 1.3 || g.bottom < -vh * 0.3) return;
+        pin.style.setProperty('--bento-p', clamp((vh * 0.9 - g.top) / Math.max(1, g.height + vh * 0.2)).toFixed(4));
         tiles.forEach(function (t) {
           // a peça começa a entrar quando o lugar dela aparece embaixo e assenta antes do meio da tela
           var right = t.mid >= g.width / 2; // na mesma linha, a da direita entra um pouco depois
@@ -708,6 +709,39 @@
     if (reduceMotion.addEventListener) reduceMotion.addEventListener('change', sync);
     else if (reduceMotion.addListener) reduceMotion.addListener(sync);
     sync();
+  })();
+
+  /* ---------- FAQ animado (referência: onexcloud.onexdc.com.br) ----------
+     O <details> nativo continua sendo a base (e o que vale sem JS). Aqui a resposta é embrulhada em .faq-a > .faq-a-inner
+     para a altura animar por grid-template-rows; .is-open comanda o visual e o atributo open só sai DEPOIS de a altura
+     fechar, senão o conteúdo sumiria de uma vez. Um cartão aberto por vez (o atributo name sai: ele fecharia os outros
+     sem animação). */
+  (function faq() {
+    var list = document.querySelector('.faq-list');
+    var items = list ? Array.prototype.slice.call(list.querySelectorAll('details')) : [];
+    if (!items.length || !('gridTemplateRows' in document.documentElement.style)) return;
+    items.forEach(function (d) {
+      var summary = d.querySelector('summary'), wrap = document.createElement('div'), inner = document.createElement('div');
+      wrap.className = 'faq-a'; inner.className = 'faq-a-inner';
+      Array.prototype.slice.call(d.childNodes).forEach(function (node) { if (node !== summary) inner.appendChild(node); });
+      wrap.appendChild(inner); d.appendChild(wrap);
+      d.removeAttribute('name');
+      if (d.open) d.classList.add('is-open');
+      d._t = 0;
+      summary.addEventListener('click', function (e) {
+        e.preventDefault();
+        var abrir = !d.classList.contains('is-open');
+        items.forEach(function (o) { if (o !== d) fechar(o); });
+        if (abrir) { clearTimeout(d._t); d.open = true; void d.offsetHeight; d.classList.add('is-open'); } else fechar(d);
+      });
+    });
+    function fechar(d) {
+      if (!d.classList.contains('is-open')) return;
+      d.classList.remove('is-open');
+      clearTimeout(d._t);
+      d._t = setTimeout(function () { if (!d.classList.contains('is-open')) d.open = false; }, reduceMotion.matches ? 0 : 470);
+    }
+    list.classList.add('is-js');
   })();
 
   /* ---------- Indicação da seção atual na navegação ---------- */

@@ -96,7 +96,7 @@ a { color: inherit; }
    sobre a página. O ícone abre uma cortina lima em tela cheia (.nav) com os links grandes; no hover as letras
    rolam (siteflux-personalidade) e uma faixa escura atravessa a linha. As cores vêm de --hd-* e --lg-*: o JS
    troca data-tone conforme o fundo sob o topo (claro = padrão; dark; blue). */
-:root { --hd-h: 92px; } /* altura do topo (a hero também usa) */
+:root { --hd-h: 92px; --hd-top: 16px; } /* altura do topo (a hero também usa) e o respiro acima dele */
 .header {
   position: sticky; top: 0; z-index: 100;
   max-width: var(--sf-max); margin: 0 auto; padding: 0 var(--box-gap);
@@ -116,7 +116,7 @@ a { color: inherit; }
 /* sem JS o menu fica sempre expandido: o cabeçalho não acompanha o scroll */
 html:not(.js) .header { position: static; }
 /* com JS o cabeçalho ocupa só a altura do topo; a cortina é fixa e não empurra a página */
-html.js .header { height: var(--hd-h); }
+html.js .header { height: calc(var(--hd-h) + var(--hd-top)); padding-top: var(--hd-top); }
 .header-bar {
   position: relative;
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; column-gap: 24px;
@@ -245,8 +245,8 @@ html.js .nav .nav-cta .btn:hover { background: #0a4a38; }
 }
 
 /* como no protótipo, a página começa por baixo do topo transparente: a hero sobe e ganha o respiro de volta por dentro */
-html.js .header { margin-bottom: calc(-1 * var(--hd-h)); }
-html.js .hero { padding-top: calc(var(--pad-y) + var(--hd-h) * .55); }
+html.js .header { margin-bottom: calc(-1 * (var(--hd-h) + var(--hd-top))); }
+html.js .hero { padding-top: calc(var(--pad-y) + var(--hd-h) * .55 + var(--hd-top)); }
 
 /* ---------- Blocos ---------- */
 main { max-width: var(--sf-max); margin: 0 auto; }
@@ -632,6 +632,62 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   .inst-post > i { aspect-ratio: 16 / 8; }
 }
 
+/* ----- wireframe cinza: a mesma estrutura dos três sites, sem cor nem texto legível -----
+   O desenho colorido disputava a atenção com o que explica a cena (balão e legenda). Aqui todo texto vira barra cinza
+   (cor transparente + fundo), imagens e ícones ficam em cinza e só sobram dois acentos por tela, como no wireframe do
+   protótipo: a chamada principal em azul e um cartão em lima. Layout, tipos de site, visão de celular e a montagem no
+   scroll continuam iguais — é só uma camada de pintura por cima das regras anteriores. */
+.device-screen .device-track { --w1: rgba(4, 43, 32, .17); --w2: rgba(4, 43, 32, .09); --w0: #f2f2f0; color: transparent; }
+.device-screen .device-track .wire-block { background: #fff; color: transparent; border-bottom: 1px dashed rgba(4, 43, 32, .2); }
+.device-screen .device-track .wire-block:nth-child(even) { background: var(--w0); }
+.device-screen .device-track .rx,
+.device-screen .device-track .site-links i,
+.device-screen .device-track .site-stats span { color: transparent; background: var(--w1); border-radius: .45em; }
+.device-screen .device-track .site-links.rx, .device-screen .device-track .site-line.rx, .device-screen .device-track .site-check.rx { background: none; }
+.device-screen .device-track .site-line, .device-screen .device-track .site-check { background: var(--w1); opacity: 1; }
+.device-screen .device-track .site-check::before { background: var(--w1); }
+.device-screen .device-track .site-p.rx { background: var(--w2); opacity: 1; }
+.device-screen .device-track .site-h1 .rx { margin-bottom: .12em; }
+.device-screen .device-track .site-h1 em, .device-screen .device-track .inst-hero .site-h1 em { color: transparent; background: var(--w1); }
+.device-screen .device-track .site-stats { border-top-color: var(--w1); }
+.device-screen .device-track .site-stats b { color: transparent; }
+.device-screen .device-track .site-cta, .device-screen .device-track .site-btn, .device-screen .device-track .site-tag,
+.device-screen .device-track .site-float, .device-screen .device-track .site-go, .device-screen .device-track .site-search,
+.device-screen .device-track .shop-steps i, .device-screen .device-track .shop-pay i, .device-screen .device-track .site-cart i {
+  color: transparent; background: var(--w1); box-shadow: none;
+}
+.device-screen .device-track .site-btn--ghost, .device-screen .device-track .shop-pay i, .device-screen .device-track .shop-steps i:not(.is-done) { background: transparent; box-shadow: inset 0 0 0 .12em var(--w1); }
+.device-screen .device-track .site-float { background: #fff; box-shadow: 0 .6em 1.4em rgba(4, 43, 32, .14), inset 0 0 0 .1em var(--w1); }
+.device-screen .device-track .site-tag i, .device-screen .device-track .site-float i { background: var(--w1); box-shadow: none; }
+.device-screen .device-track .site-burger i { background: var(--w1); }
+/* os dois acentos de cada tela */
+.device-screen .device-track .site-hero .site-btn:not(.site-btn--ghost) { background: var(--sf-blue); }
+.device-screen .device-track .site-cell--lime, .device-screen .device-track .shop-card:nth-child(2) .shop-img, .device-screen .device-track .inst-cards .site-cell--lime { background: var(--sf-lime); }
+/* vetores */
+.device-screen .device-track svg .draw { stroke: rgba(4, 43, 32, .38); }
+.device-screen .device-track svg g[stroke] { stroke: rgba(4, 43, 32, .32); }
+.device-screen .device-track svg .fade { fill: var(--w1); }
+.device-screen .device-track svg .rise { fill: var(--w2); }
+.device-screen .device-track .site-cta svg, .device-screen .device-track .site-go svg, .device-screen .device-track .site-search svg { stroke: transparent; }
+.device-screen .device-track .site-badge circle { fill: #fff; stroke: var(--w1); stroke-width: 2; }
+.device-screen .device-track .site-badge text { fill: rgba(4, 43, 32, .3); }
+.device-screen .device-track .site-badge path { stroke: rgba(4, 43, 32, .3); }
+.device-screen .device-track .site-stars svg { fill: var(--w1); }
+.device-screen .device-track .site-logo svg, .device-screen .device-track .site-nav--light .site-logo svg, .device-screen .device-track .site-cell--dark svg, .device-screen .device-track .site-social { color: inherit; }
+/* superfícies */
+.device-screen .device-track .site-marquee { background: var(--w2); }
+.device-screen .device-track .site-marquee span { color: transparent; }
+.device-screen .device-track .site-cell, .device-screen .device-track .site-plan, .device-screen .device-track .shop-cartbox {
+  background: #fff; color: transparent; box-shadow: none; border: 1.5px dashed rgba(4, 43, 32, .25);
+}
+.device-screen .device-track .site-row { border-color: var(--w1); }
+.device-screen .device-track .site-row--hl { background: var(--w2); }
+.device-screen .device-track .site-faces i { background: var(--w1); box-shadow: 0 0 0 .2em #fff; }
+.device-screen .device-track .site-wordmark { -webkit-text-stroke: .018em rgba(4, 43, 32, .3); background: none; }
+.device-screen .device-track .shop-img, .device-screen .device-track .shop-thumb, .device-screen .device-track .inst-post > i { background: var(--w2); color: inherit; }
+.device-screen .device-track .shop-total { border-top-color: var(--w1); }
+.device-screen .device-track .site-nav { border-bottom: 1px dashed rgba(4, 43, 32, .2); }
+
 /* modo história: cada peça lê --b (0 → 1) do seu bloco; --b2 é a segunda metade, para o que entra depois */
 .story.is-story .wire-block { opacity: clamp(0, calc(var(--b, 0) * 2.5), 1); transform: translateY(calc((1 - var(--b, 0)) * 2.2em)); }
 .story.is-story .rx { clip-path: inset(-10% calc((1 - min(1, var(--b, 0) * 1.15)) * 100%) -10% 0); }
@@ -679,13 +735,13 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .story.is-story .story-stage {
   position: sticky; top: 0; height: 100vh; height: 100svh;
   grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: 14px;
-  padding: 96px 0 14px;
+  padding: 112px 0 14px;
 }
 .story.is-story .device-fig { perspective: 1400px; } /* a perspectiva precisa estar no pai direto do tablet */
 .story.is-story .device { transform-origin: 50% 0; will-change: transform, opacity; }
 /* proporção travada: a tela do tablet é sempre 1,89:1 e o tamanho vem da ALTURA da janela (o que sobra entre o
    cabeçalho e a legenda), então o enquadramento é o mesmo em qualquer resolução ou zoom; o conteúdo escala junto (cqi) */
-.story.is-story .device-fig { max-width: none; width: min(100%, max(420px, calc((100vh - 326px) * 1.89 + 48px))); width: min(100%, max(420px, calc((100svh - 326px) * 1.89 + 48px))); }
+.story.is-story .device-fig { max-width: none; width: min(100%, max(420px, calc((100vh - 342px) * 1.89 + 48px))); width: min(100%, max(420px, calc((100svh - 342px) * 1.89 + 48px))); }
 .story.is-story .device-screen { height: auto; aspect-ratio: 1.89; }
 .story.is-story .device-track { will-change: transform; }
 .story.is-story .device-fig figcaption { display: none; }
@@ -717,116 +773,15 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 
 /* ---------- Projetos: a composição em pastas vive em siteflux-personalidade.css ---------- */
 
-/* ---------- Como funciona: o painel que se monta no scroll ----------
-   Base: bento da seção #s4d de siteflux-prototipo.html. Lá as peças só deslizavam ~100 px ao
-   aparecer; aqui cada uma nasce fora da tela, pelo canto indicado em data-fly, e converge para o
-   lugar conforme o scroll (o JS escreve o transform a cada pixel, sem transição). */
-#como-funciona { overflow: hidden; overflow: clip; } /* as peças nascem fora da tela sem criar rolagem lateral */
-.bento-stage { display: grid; gap: clamp(20px, 2.4vw, 32px); }
-.bento-grid { display: grid; grid-template-columns: 1.12fr 1.06fr .96fr; grid-template-rows: auto auto auto; gap: 22px; align-items: start; max-width: 1180px; width: 100%; margin-inline: auto; }
-.bento-blog { grid-column: 1; grid-row: 1 / 3; }
-.bento-hello { grid-column: 2; grid-row: 1; }
-.bento-webinar { grid-column: 2; grid-row: 2; }
-.bento-statcol { grid-column: 1; grid-row: 3; }
-.bento-tasks { grid-column: 2; grid-row: 3; }
-.bento-rightcol { grid-column: 3; grid-row: 1 / 4; display: flex; flex-direction: column; justify-content: flex-end; gap: 18px; height: 100%; }
-@media (max-width: 1100px) {
-  .bento-grid { grid-template-columns: 1fr 1fr; }
-  .bento-rightcol { grid-column: 1 / 3; grid-row: 4; height: auto; flex-direction: row; align-items: center; }
-  .bento-rightcol > * { flex: 1; }
-}
-@media (max-width: 720px) {
-  .bento-grid { grid-template-columns: 1fr; }
-  .bento-blog, .bento-hello, .bento-webinar, .bento-statcol, .bento-tasks, .bento-rightcol { grid-column: 1; grid-row: auto; }
-  .bento-rightcol { flex-direction: column; align-items: stretch; }
-}
-.bento-grid i { display: block; font-style: normal; }
-.bento-card { background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 20px 40px rgba(4, 43, 32, .08); }
-.bento-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.bento-label { font-size: 13.5px; font-weight: 600; color: rgba(4, 43, 32, .62); margin-top: 18px; }
-.bento-title { font-size: 24px; font-weight: 700; line-height: 1.25; margin-top: 5px; }
-.bento-title--big { font-size: 27px; }
-.bento-title--mid { font-size: 20px; line-height: 1.5; }
-/* Botões do painel: ícones vetoriais do sprite (#sf-i-*), a cor do traço vem de `color`. */
-.bento-ico { display: flex; align-items: center; justify-content: center; flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(4, 43, 32, .07); box-shadow: inset 0 0 0 1px rgba(4, 43, 32, .1); color: var(--sf-dark); }
-.bento-ico svg { width: 18px; height: 18px; }
-.bento-ico--dark { background: var(--sf-dark); box-shadow: 0 6px 14px rgba(4, 43, 32, .22); color: var(--sf-lime); }
-.bento-ico--lime { background: var(--sf-lime); box-shadow: none; color: var(--sf-dark); }
-.bento-who { display: flex; align-items: center; gap: 9px; font-size: 14.5px; font-weight: 500; color: rgba(4, 43, 32, .68); }
-.bento-who i { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--sf-dark); }
-.bento-who i svg { width: 16px; height: 16px; fill: var(--sf-lime); }
-.bento-photo { position: relative; margin-top: 18px; height: 200px; border-radius: 18px; overflow: hidden; background: linear-gradient(150deg, var(--sf-dark), #0c5a72 55%, var(--sf-blue) 130%); }
-.bento-art { position: absolute; inset: 0; width: 100%; height: 100%; font-family: inherit; }
-.bento-domain { position: absolute; top: 14px; left: 14px; padding: 6px 14px; border-radius: 999px; background: #fff; font-size: 12.5px; font-weight: 700; }
-.bento-photo-foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(4, 43, 32, .84); }
-.bento-stack { display: flex; }
-.bento-stack i { width: 22px; height: 22px; margin-left: -8px; border-radius: 50%; border: 1.5px solid #fff; background: var(--sf-lime); }
-.bento-stack i:first-child { margin-left: 0; }
-.bento-photo-foot small { font-size: 12.5px; font-weight: 500; color: #fff; }
-.bento-mark { width: 26px; height: 26px; fill: var(--sf-dark); }
-.bento-status { display: flex; align-items: center; gap: 9px; margin-top: 12px; font-size: 16.5px; line-height: 1.4; color: rgba(4, 43, 32, .75); }
-.bento-status i { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--sf-lime); box-shadow: 0 0 0 4px rgba(203, 219, 97, .3); color: var(--sf-dark); flex: none; }
-.bento-status i svg { width: 15px; height: 15px; }
-.bento-status b { color: var(--sf-dark); }
-.bento-webinar { display: flex; align-items: center; gap: 16px; }
-.bento-date { text-align: center; flex: none; }
-.bento-date b { display: block; font-size: 24px; font-weight: 800; }
-.bento-date span { font-size: 12.5px; font-weight: 600; color: rgba(4, 43, 32, .62); }
-.bento-mid { flex: 1; }
-.bento-mid b { font-size: 16px; }
-.bento-mid p { font-size: 13.5px; color: rgba(4, 43, 32, .68); margin-top: 3px; }
-.bento-dots { display: flex; align-items: center; justify-content: center; flex: none; width: 34px; height: 34px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(4, 43, 32, .12); color: rgba(4, 43, 32, .62); }
-.bento-dots svg { width: 16px; height: 16px; }
-.bento-statcol { display: flex; flex-direction: column; gap: 12px; }
-.bento-pill { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 20px; border-radius: 999px; background: #fff; box-shadow: 0 10px 22px rgba(4, 43, 32, .08); font-size: 14.5px; font-weight: 600; white-space: nowrap; }
-.bento-pill > i { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin: -4px -8px -4px 0; border-radius: 50%; background: var(--sf-blue); color: var(--sf-dark); flex: none; }
-.bento-pill > i svg { width: 15px; height: 15px; transform: translate(-1px, 1px); }
-.bento-pill-row { display: flex; align-items: center; gap: 12px; }
-.bento-pill-row .bento-pill { flex: 1; min-width: 0; }
-.bento-up { display: inline-flex; align-items: center; gap: 6px; }
-.bento-up i { display: flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; margin-left: -6px; border-radius: 50%; background: var(--sf-lime); color: var(--sf-dark); }
-.bento-up svg { width: 14px; height: 14px; }
-.bento-circle { display: flex; align-items: center; justify-content: center; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--sf-dark); box-shadow: 0 8px 16px rgba(4, 43, 32, .2); color: var(--sf-lime); }
-.bento-circle svg { width: 18px; height: 18px; }
-.bento-tasks { background: var(--sf-dark); color: #fff; }
-.bento-tasks .bento-label { color: rgba(255, 255, 255, .72); }
-.bento-when { font-size: 13.5px; font-weight: 700; }
-.bento-icons { display: flex; gap: 7px; }
-.bento-tasks .bento-ico { background: rgba(255, 255, 255, .1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); color: #fff; }
-.bento-tasks .bento-ico--lime { background: var(--sf-lime); box-shadow: none; color: var(--sf-dark); }
-.bento-tag { display: inline-flex; align-items: center; gap: 5px; margin: 0 6px; padding: 4px 11px 4px 8px; border-radius: 999px; background: var(--sf-lime); color: var(--sf-dark); font-size: 12px; font-weight: 800; vertical-align: middle; }
-.bento-tag svg { width: 12px; height: 12px; flex: none; }
-.bento-hash { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
-.bento-hash span { padding: 6px 13px; border-radius: 999px; background: rgba(255, 255, 255, .14); font-size: 12.5px; font-weight: 600; }
-.bento-progress { background: radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, .28), transparent 55%), var(--sf-blue); }
-/* abas como controle segmentado: um trilho só, a ativa é a peça branca em relevo */
-.bento-tabs { display: inline-flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px; background: rgba(4, 43, 32, .14); box-shadow: inset 0 1px 2px rgba(4, 43, 32, .12); }
-.bento-tabs span { padding: 6px 15px; border-radius: 999px; font-size: 12.5px; font-weight: 700; color: rgba(4, 43, 32, .7); }
-.bento-tabs .is-on { background: #fff; box-shadow: 0 3px 8px rgba(4, 43, 32, .18); color: var(--sf-dark); }
-.bento-progress .bento-label { color: rgba(4, 43, 32, .75); }
-.bento-progress-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; margin-top: 8px; }
-.bento-progress-row p { flex: none; }
-.bento-spark { flex: 1; min-width: 0; height: 56px; margin-right: -8px; }
-.bento-progress-row p { max-width: 130px; font-size: 17px; font-weight: 600; line-height: 1.35; }
-.bento-go { display: flex; align-items: center; justify-content: center; flex: none; width: 56px; height: 56px; border-radius: 50%; background: var(--sf-dark); box-shadow: 0 0 0 6px rgba(4, 43, 32, .14), 0 12px 22px rgba(4, 43, 32, .3); color: var(--sf-lime); position: relative; }
-.bento-go svg { width: 28px; height: 28px; }
-/* barra de navegação em doca: o item ativo abre em pílula com rótulo, os demais são botões redondos */
-.bento-navpill { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 8px 8px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 1px rgba(4, 43, 32, .06), 0 14px 26px rgba(4, 43, 32, .1); }
-.bento-nav { display: flex; align-items: center; justify-content: center; flex: none; width: 46px; height: 46px; border-radius: 50%; background: rgba(4, 43, 32, .06); color: var(--sf-dark); }
-.bento-nav svg { width: 20px; height: 20px; flex: none; }
-.bento-nav--mark { width: auto; gap: 9px; padding: 0 20px 0 14px; border-radius: 999px; background: var(--sf-dark); box-shadow: 0 8px 16px rgba(4, 43, 32, .24); color: var(--sf-lime); font-size: 14px; }
-.bento-nav--mark svg { width: 24px; height: 24px; fill: var(--sf-lime); }
-.bento-nav--mark b { font-weight: 700; }
-.bento-nav--user { background: var(--sf-lime); box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--sf-lime); }
-.bento-caption { max-width: 1180px; width: 100%; margin-inline: auto; font-size: 17px; font-weight: 600; line-height: 1.5; }
-.bento-caption .muted { display: block; font-size: 14px; font-weight: 400; }
-
-/* com JS: o scroll escreve o transform de cada peça; preso na tela quando o painel cabe nela */
+/* ---------- Como funciona: os passos entram um de cada vez no scroll ----------
+   Mesmo motor do painel que existiu aqui (bloco "Peças que se montam no scroll" de siteflux.js): cada [data-fly] nasce fora
+   da tela e entra em percurso reto conforme o scroll; quando cabe, a seção prende na tela (.is-pinned) enquanto os passos
+   chegam, e a linha que os liga se desenha junto (--bento-p). Sem JS ou com movimento reduzido: tudo parado, no lugar. */
+#como-funciona { overflow: hidden; overflow: clip; } /* os passos nascem fora da tela sem criar rolagem lateral */
 .bento-pin.is-fly [data-fly] { will-change: transform, opacity; }
-.bento-pin.is-pinned { height: calc(100vh + 190vh); } /* espaço de scroll para sete entradas, uma de cada vez */
-.bento-pin.is-pinned .bento-stage { position: sticky; top: 0; height: 100vh; height: 100svh; align-content: center; padding-top: 92px; }
-.bento-pin.is-pinned .bento-grid { transform: scale(var(--bento-scale, 1)); transform-origin: 50% 50%; }
-.bento-pin + .steps-wrap { margin-top: clamp(48px, 6vw, 88px); }
+.bento-pin.is-fly .steps-line path { stroke-dashoffset: calc(1 - var(--bento-p, 1)); }
+.bento-pin.is-pinned { height: calc(100vh + 130vh); } /* espaço de scroll para quatro entradas, uma de cada vez */
+.bento-pin.is-pinned .bento-stage { position: sticky; top: 0; height: 100vh; height: 100svh; display: grid; align-content: center; padding-top: 112px; }
 @media print { .bento-pin.is-pinned { height: auto; } .bento-pin.is-pinned .bento-stage { position: static; height: auto; } }
 
 /* ---------- Como funciona ---------- */
@@ -864,48 +819,47 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .plans-head { max-width: none; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 24px clamp(32px, 5vw, 96px); align-items: end; margin-bottom: clamp(36px, 4vw, 64px); }
 .plans-head .h2 { max-width: 16ch; }
 .plans-head .lead { margin-top: 0; padding-bottom: .3em; }
-.plans { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--box-gap); }
-.plan { grid-column: span 2; display: flex; border-radius: var(--radius-lg); background: var(--sf-white); color: var(--sf-dark); }
-.plan:nth-child(n+4) { grid-column: span 3; }
+/* planos em camadas: um cartão largo por plano (nome e preço · o que inclui · botão), empilhados. Em telas altas cada
+   cartão gruda um pouco abaixo do anterior (position: sticky + --i), então ao rolar o próximo sobe POR CIMA do anterior
+   e os nomes dos planos já vistos ficam visíveis como abas. Em telas baixas ou estreitas: pilha simples, sem grudar. */
+.plans { display: grid; gap: clamp(18px, 2vw, 28px); max-width: 1180px; margin-inline: auto; }
+.plan { border-radius: var(--radius-lg); background: var(--sf-white); color: var(--sf-dark); box-shadow: 0 -10px 30px rgba(4, 43, 32, .1), 0 18px 40px rgba(4, 43, 32, .08); }
 .plan--focus { background: var(--sf-dark); color: #fff; }
-.plan-inner { display: flex; flex-direction: column; width: 100%; padding: clamp(26px, 2.2vw, 36px); }
-.plan h3 { font-size: clamp(26px, 2vw, 32px); font-weight: 700; line-height: 1.1; letter-spacing: -.01em; }
+.plan-inner {
+  display: grid; grid-template-columns: minmax(230px, .9fr) minmax(0, 2fr) minmax(230px, .7fr); grid-template-areas: "cab lista acao" "preco lista acao";
+  gap: 6px clamp(28px, 3.4vw, 56px); align-items: start; padding: clamp(28px, 2.8vw, 44px) clamp(28px, 3.2vw, 52px);
+}
+.plan-inner > header { grid-area: cab; }
+.plan h3 { font-size: clamp(28px, 2.4vw, 38px); font-weight: 700; line-height: 1.1; letter-spacing: -.015em; }
 .plan-tag { margin-top: 6px; font-size: 15px; font-weight: 600; color: rgba(4, 43, 32, .72); }
 .plan--focus .plan-tag { color: var(--sf-lime); }
-.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; margin-top: 22px; padding-bottom: 22px; border-bottom: 2px solid rgba(4, 43, 32, .14); font-variant-numeric: tabular-nums; }
-.plan--focus .plan-price { border-color: rgba(255, 255, 255, .2); }
+.plan-price { grid-area: preco; align-self: end; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; margin-top: 18px; font-variant-numeric: tabular-nums; }
 .plan-cur { font-size: 16px; font-weight: 700; }
-.plan-price strong { font-size: clamp(38px, 3vw, 46px); font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+.plan-price strong { font-size: clamp(40px, 3.4vw, 54px); font-weight: 700; line-height: 1; letter-spacing: -.02em; }
 .plan--focus .plan-price strong { color: var(--sf-lime); }
 .plan-per { font-size: 16px; font-weight: 600; color: rgba(4, 43, 32, .72); }
 .plan--focus .plan-per { color: rgba(255, 255, 255, .78); }
-.plan-list { display: grid; gap: 12px; align-content: start; flex: 1; margin: 22px 0 28px; }
+.plan-list { grid-area: lista; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px clamp(20px, 2.4vw, 40px); align-content: start; padding-left: clamp(24px, 3vw, 48px); border-left: 2px solid rgba(4, 43, 32, .12); }
+.plan--focus .plan-list { border-color: rgba(255, 255, 255, .2); }
 .plan-list li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; font-size: 15.5px; line-height: 1.4; font-weight: 500; }
 .plan-list svg { width: 18px; height: 18px; margin-top: 2px; fill: var(--sf-dark); }
 .plan--focus .plan-list svg { fill: var(--sf-lime); }
-.plan .btn { width: 100%; }
+.plan .btn { grid-area: acao; align-self: center; width: 100%; padding-inline: 18px; white-space: nowrap; text-align: center; }
 .plan:not(.plan--focus) .btn:hover { background: var(--sf-blue); color: var(--sf-dark); }
-.plans-note { margin-top: 20px; font-size: 14.5px; }
-/* comparação consistente: todos os cards com a mesma largura e lista em uma coluna.
-   5 colunas a partir de 1280 px; antes disso 3 + 2 centralizados. */
-.plan:nth-child(n+4) { grid-column: span 2; }
-.plan:nth-child(4) { grid-column: 2 / span 2; }
-@media (min-width: 1280px) {
-  .plans { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .plan, .plan:nth-child(n+4), .plan:nth-child(4) { grid-column: auto; }
-  .plan-inner { padding: clamp(22px, 1.7vw, 34px); }
-  .plan-list li { font-size: 15px; }
-  .plan-price strong { font-size: clamp(32px, 2.55vw, 46px); }
+.plans-note { max-width: 1180px; margin: 24px auto 0; font-size: 14.5px; }
+@media (min-width: 1001px) and (min-height: 760px) {
+  .plan { position: sticky; top: calc(124px + var(--i, 0) * 58px); }
 }
 @media (max-width: 1000px) {
   .plans-head { grid-template-columns: 1fr; align-items: start; }
-  .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .plan, .plan:nth-child(n+4), .plan:nth-child(4) { grid-column: auto; }
-  .plan:last-child { grid-column: 1 / -1; }
+  .plan-inner { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "cab preco" "lista lista" "acao acao"; gap: 22px 28px; }
+  .plan-price { margin-top: 0; justify-self: end; }
+  .plan-list { padding: 22px 0 0; border-left: 0; border-top: 2px solid rgba(4, 43, 32, .12); }
 }
 @media (max-width: 640px) {
-  .plans { grid-template-columns: 1fr; }
-  .plan:last-child { grid-column: auto; }
+  .plan-inner { grid-template-columns: 1fr; grid-template-areas: "cab" "preco" "lista" "acao"; }
+  .plan-price { justify-self: start; }
+  .plan-list { grid-template-columns: 1fr; }
 }
 .plan-invite {
   --r: var(--radius-lg);
@@ -920,28 +874,34 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 /* ---------- FAQ ---------- */
 .faq { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(32px, 5vw, 96px); align-items: start; }
 .faq .sec-head { margin-bottom: 0; }
-.faq-list details { border-bottom: 2px solid rgba(4, 43, 32, .16); }
-.faq-list details:first-child { border-top: 2px solid rgba(4, 43, 32, .16); }
+/* cartões com a animação do FAQ de onexcloud.onexdc.com.br: ao abrir, o cartão ganha sombra e cor, a pergunta muda de cor,
+   o círculo do "+" enche e o "+" gira 135° com mola, a altura abre por grid-template-rows 0fr → 1fr e o texto entra um
+   pouco depois, subindo. Sem JS continua o <details> nativo, com o mesmo visual e sem a animação de altura. */
+.faq-list { display: grid; gap: 12px; }
+.faq-list details { border-radius: 20px; background: var(--sf-beige); overflow: hidden; transition: background-color .35s ease, box-shadow .35s ease, color .35s ease; }
 .faq-list summary {
-  display: flex; align-items: center; justify-content: space-between; gap: 20px;
-  padding: 24px 4px; cursor: pointer; list-style: none;
-  font-size: clamp(17px, 1.4vw, 20px); font-weight: 700; line-height: 1.35;
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  padding: 22px 24px; cursor: pointer; list-style: none;
+  font-size: clamp(17px, 1.4vw, 20px); font-weight: 700; line-height: 1.35; transition: color .2s ease;
 }
 .faq-list summary::-webkit-details-marker { display: none; }
-.faq-plus { position: relative; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--sf-beige); transition: background-color .3s ease; }
-.faq-plus::before, .faq-plus::after { content: ''; position: absolute; left: 50%; top: 50%; background: var(--sf-dark); transform: translate(-50%, -50%); transition: transform .35s var(--ease), opacity .3s ease; }
-.faq-plus::before { width: 14px; height: 2px; }
-.faq-plus::after { width: 2px; height: 14px; }
-details[open] .faq-plus { background: var(--sf-lime); }
-details[open] .faq-plus::after { transform: translate(-50%, -50%) rotate(90deg); opacity: 0; }
-.faq-list details p { padding: 0 60px 26px 4px; max-width: 68ch; font-size: 16px; }
-@supports (interpolate-size: allow-keywords) {
-  .faq-list { interpolate-size: allow-keywords; }
-  .faq-list details::details-content { block-size: 0; overflow: clip; transition: block-size .4s var(--ease), content-visibility .4s allow-discrete; }
-  .faq-list details[open]::details-content { block-size: auto; }
-}
+.faq-plus { position: relative; flex: none; width: 34px; height: 34px; border-radius: 50%; background: #fff; transition: background-color .35s cubic-bezier(.2, .8, .2, 1), transform .4s cubic-bezier(.34, 1.3, .64, 1); }
+.faq-plus::before, .faq-plus::after { content: ''; position: absolute; left: 50%; top: 50%; background: var(--sf-dark); border-radius: 2px; transform: translate(-50%, -50%); }
+.faq-plus::before { width: 14px; height: 2.4px; }
+.faq-plus::after { width: 2.4px; height: 14px; }
+.faq-list details p { margin: 0; padding: 0 64px 24px 24px; max-width: 70ch; font-size: 16px; line-height: 1.6; }
+/* aberto: sem JS quem manda é [open]; com JS, .is-open (o [open] fica ligado durante o fechamento para a altura animar) */
+.faq-list:not(.is-js) details[open], .faq-list details.is-open { background: var(--sf-dark); color: #fff; box-shadow: 0 22px 44px rgba(4, 43, 32, .18); --focus: var(--sf-lime); }
+.faq-list:not(.is-js) details[open] summary, .faq-list details.is-open summary { color: var(--sf-lime); }
+.faq-list:not(.is-js) details[open] .faq-plus, .faq-list details.is-open .faq-plus { background: var(--sf-lime); transform: rotate(135deg); }
+.faq-list:not(.is-js) details[open] p, .faq-list details.is-open p { color: rgba(255, 255, 255, .84); }
+.faq-list.is-js .faq-a { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .45s cubic-bezier(.2, .8, .2, 1); }
+.faq-list.is-js details.is-open .faq-a { grid-template-rows: 1fr; }
+.faq-list.is-js .faq-a-inner { overflow: hidden; min-height: 0; }
+.faq-list.is-js .faq-a-inner p { opacity: 0; transform: translateY(-8px); transition: opacity .3s ease, transform .3s ease, color .35s ease; }
+.faq-list.is-js details.is-open .faq-a-inner p { opacity: 1; transform: none; transition: opacity .35s ease .12s, transform .35s ease .12s, color .35s ease; }
 @media (max-width: 1000px) { .faq { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .faq-list details p { padding-right: 4px; } }
+@media (max-width: 560px) { .faq-list details p { padding-right: 24px; } }
 
 /* ---------- CTA final ---------- */
 .final { text-align: center; display: grid; justify-items: center; gap: 0; padding-top: clamp(88px, 10vw, 160px); padding-bottom: clamp(88px, 10vw, 160px); }
@@ -976,9 +936,6 @@ details[open] .faq-plus::after { transform: translate(-50%, -50%) rotate(90deg);
 .reveal-run[data-reveal="lines"] .ln > span { transition: transform 1.1s var(--ease) calc(var(--n, 0) * .09s); }
 .reveal-pending { opacity: 0; transform: translateY(24px); }
 .reveal-run { transition: opacity .8s var(--ease), transform .8s var(--ease); transition-delay: calc(var(--i, 0) * .09s); }
-.steps-line.reveal-pending { opacity: 1; transform: none; }
-.steps-line.reveal-pending path { stroke-dashoffset: 1; }
-.steps-line.reveal-run path { transition: stroke-dashoffset 1.6s var(--ease) .2s; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

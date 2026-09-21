@@ -264,3 +264,40 @@ html.js .pasta-pilha { cursor: pointer; }
 }
 @media (max-height: 560px) and (min-width: 900px) { .galeria-anel { display: none; } }
 @media (prefers-reduced-motion: reduce) { .galeria-anel { display: none; } }
+
+/* ---------- 5. Projetos em carrossel de capas (o JS monta a janela, posiciona as capas e cria os controles) ----------
+   Referência do Walter: a tela do projeto da vez grande no centro e as vizinhas menores, um pouco mais baixas, levemente
+   giradas e escurecidas, saindo pelas bordas. Nada de pasta nem folhas aqui: a capa (janela de navegador com a captura)
+   é o cartão. Nome, tipo, resumo e "Explorar projeto" aparecem só sob a capa do centro. Clicar na capa do centro abre a
+   galeria em tela cheia de sempre; clicar numa vizinha traz ela para o centro. Sem JS: a grade de pastas. */
+.pastas-janela { position: relative; overflow: hidden; margin-inline: calc(-1 * var(--pad-x)); padding-block: 12px 4px; touch-action: pan-y; cursor: grab; }
+.pastas-janela.is-dragging { cursor: grabbing; }
+.pastas.is-slider { --cw: min(56vw, 900px); display: block; position: relative; max-width: none; margin: 0; }
+.pastas.is-slider > .pasta {
+  position: absolute; left: 50%; top: 0; width: var(--cw); margin-left: calc(var(--cw) / -2);
+  transform-origin: 50% 40%; will-change: transform; transition: transform .75s var(--ease), filter .6s ease, opacity .5s ease;
+}
+.pastas.is-slider.is-dragging > .pasta, .pastas.is-slider > .pasta.is-salto { transition: none; }
+.pastas.is-slider .pasta-pilha { margin: 0; padding: 0; }
+.pastas.is-slider .pasta-fundo, .pastas.is-slider .pasta-folha { display: none; }
+.pastas.is-slider .pasta-capa, .pastas.is-slider .pasta:hover .pasta-capa, .pastas.is-slider .pasta:focus-within .pasta-capa { transform: none; border-radius: clamp(10px, 1.2vw, 18px); box-shadow: 0 30px 70px rgba(0, 0, 0, .45); }
+.pastas.is-slider .pasta-barra { height: clamp(16px, 1.6vw, 24px); }
+.pastas.is-slider .pasta-info { padding-top: clamp(20px, 2.2vw, 32px); text-align: center; opacity: 0; transform: translateY(10px); transition: opacity .45s ease, transform .6s var(--ease); }
+.pastas.is-slider .pasta.is-atual .pasta-info { opacity: 1; transform: none; transition-delay: .18s; }
+.pastas.is-slider .pasta-titulo { flex-direction: column; align-items: center; gap: 8px; }
+.pastas.is-slider .pasta-titulo h3 { font-size: clamp(26px, 2.8vw, 42px); }
+.pastas.is-slider .pasta-resumo { margin: 12px auto 0; font-size: clamp(16px, 1.25vw, 18.5px); }
+.pastas.is-slider .pasta-detalhes { max-width: 420px; margin: 18px auto 0; }
+.pastas-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: clamp(18px, 2.4vw, 36px); }
+.pastas-conta { font-size: 13.5px; font-weight: 800; letter-spacing: .08em; color: var(--sf-lime); font-variant-numeric: tabular-nums; }
+.pastas-pontos { display: flex; align-items: center; margin-inline: auto; }
+.pastas-ponto { position: relative; width: 36px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.pastas-ponto::before { content: ''; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; border-radius: 999px; background: rgba(255, 255, 255, .34); transform: translate(-50%, -50%); transition: width .4s var(--ease), background-color .3s ease; }
+.pastas-ponto[aria-current="true"]::before { width: 28px; background: var(--sf-lime); }
+.pastas-setas { display: flex; gap: 10px; }
+.pastas-seta { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; padding: 0; border: 2px solid rgba(255, 255, 255, .4); border-radius: 50%; background: transparent; color: #fff; cursor: pointer; transition: border-color .3s ease, color .3s ease, transform .3s var(--ease); }
+.pastas-seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.pastas-seta:hover { border-color: var(--sf-lime); color: var(--sf-lime); }
+.pastas-seta:active { transform: scale(.94); }
+@media (max-width: 760px) { .pastas.is-slider { --cw: 78vw; } }
+@media print { .pastas.is-slider { display: grid; height: auto !important; } .pastas.is-slider > .pasta { position: static; width: auto; margin: 0; transform: none !important; filter: none !important; opacity: 1 !important; } .pastas.is-slider .pasta-info { opacity: 1; transform: none; } .pastas-nav { display: none; } }
