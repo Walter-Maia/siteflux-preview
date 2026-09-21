@@ -368,7 +368,7 @@
       '<span class="pastas-setas"><button class="pastas-seta" type="button" data-dir="-1" aria-label="Projeto anterior">' + ICON_PREV + '</button>' +
       '<button class="pastas-seta" type="button" data-dir="1" aria-label="Próximo projeto">' + ICON_NEXT + '</button></span>' +
       '<span class="sr-only" aria-live="polite"></span>';
-    janela.parentNode.insertBefore(nav, janela.nextSibling);
+    janela.parentNode.insertBefore(nav, janela); // no alto: fica visível antes das capas
     var conta = nav.querySelector('.pastas-conta'), pontos = nav.querySelector('.pastas-pontos'), status = nav.querySelector('[aria-live]');
     var n = itens.length, atual = 0, drag = null, engolir = false, antes = [];
     itens.forEach(function (li, i) {
@@ -456,6 +456,22 @@
     window.addEventListener('load', mede);
     if ('ResizeObserver' in window) { new ResizeObserver(mede).observe(itens[0]); }
     pinta(); mede();
+    // avanço automático: um projeto a cada 5 s. Para com o mouse ou o foco em cima, durante o arraste, fora da tela,
+    // com a aba oculta, com a galeria aberta e com movimento reduzido; qualquer navegação manual reinicia a contagem.
+    var AUTO_MS = 5000, timer = 0, sobre = false, foco = false, naTela = !('IntersectionObserver' in window);
+    var reduz = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function podeAuto() { return !reduz.matches && !sobre && !foco && !drag && naTela && !document.hidden && !document.documentElement.classList.contains('galeria-aberta'); }
+    function arma() { clearTimeout(timer); timer = setTimeout(function () { if (podeAuto()) { ir(atual + 1, false); } arma(); }, AUTO_MS); }
+    var secao = janela.parentNode;
+    janela.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') { sobre = true; } }); // só sobre as capas
+    janela.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { sobre = false; arma(); } });
+    secao.addEventListener('focusin', function () { try { foco = !!secao.querySelector(':focus-visible'); } catch (err) { foco = true; } });
+    secao.addEventListener('focusout', function (e) { if (!secao.contains(e.relatedTarget)) { foco = false; arma(); } });
+    secao.addEventListener('click', arma);
+    janela.addEventListener('pointerup', arma);
+    if ('IntersectionObserver' in window) { new IntersectionObserver(function (en) { naTela = en[0].intersectionRatio >= 0.35; arma(); }, { threshold: [0, 0.35] }).observe(janela); }
+    document.addEventListener('visibilitychange', arma);
+    arma();
   })();
 
   /* "5 telas" sai da contagem real das figuras de cada pasta */

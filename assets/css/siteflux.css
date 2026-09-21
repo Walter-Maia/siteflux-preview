@@ -779,8 +779,13 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
    chegam, e a linha que os liga se desenha junto (--bento-p). Sem JS ou com movimento reduzido: tudo parado, no lugar. */
 #como-funciona { overflow: hidden; overflow: clip; } /* os passos nascem fora da tela sem criar rolagem lateral */
 .bento-pin.is-fly [data-fly] { will-change: transform, opacity; }
+/* no voo, o número fica azul só em quem acabou de chegar (.is-now); quando os quatro chegaram, todos ficam azuis (.is-all) */
+.bento-pin.is-fly .step .step-num { background: var(--sf-dark); color: var(--sf-lime); transition: background-color .45s ease, color .45s ease, transform .5s cubic-bezier(.34, 1.56, .64, 1); }
+.bento-pin.is-fly .step.is-now .step-num, .bento-pin.is-fly.is-all .step .step-num { background: var(--sf-blue); color: var(--sf-dark); }
+.bento-pin.is-fly .step.is-now .step-num { transform: scale(1.12); }
+.bento-pin.is-fly .step h3 { transition: color .45s ease; }
 .bento-pin.is-fly .steps-line path { stroke-dashoffset: calc(1 - var(--bento-p, 1)); }
-.bento-pin.is-pinned { height: calc(100vh + 130vh); } /* espaço de scroll para quatro entradas, uma de cada vez */
+.bento-pin.is-pinned { height: calc(100vh + 130vh); margin-bottom: calc(-1 * var(--pad-y)); } /* o palco centrado já deixa ar embaixo (não soma o respiro da seção); espaço de scroll para quatro entradas, uma de cada vez */
 .bento-pin.is-pinned .bento-stage { position: sticky; top: 0; height: 100vh; height: 100svh; display: grid; align-content: center; padding-top: 112px; }
 @media print { .bento-pin.is-pinned { height: auto; } .bento-pin.is-pinned .bento-stage { position: static; height: auto; } }
 
@@ -819,48 +824,37 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .plans-head { max-width: none; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 24px clamp(32px, 5vw, 96px); align-items: end; margin-bottom: clamp(36px, 4vw, 64px); }
 .plans-head .h2 { max-width: 16ch; }
 .plans-head .lead { margin-top: 0; padding-bottom: .3em; }
-/* planos em camadas: um cartão largo por plano (nome e preço · o que inclui · botão), empilhados. Em telas altas cada
-   cartão gruda um pouco abaixo do anterior (position: sticky + --i), então ao rolar o próximo sobe POR CIMA do anterior
-   e os nomes dos planos já vistos ficam visíveis como abas. Em telas baixas ou estreitas: pilha simples, sem grudar. */
-.plans { display: grid; gap: clamp(18px, 2vw, 28px); max-width: 1180px; margin-inline: auto; }
-.plan { border-radius: var(--radius-lg); background: var(--sf-white); color: var(--sf-dark); box-shadow: 0 -10px 30px rgba(4, 43, 32, .1), 0 18px 40px rgba(4, 43, 32, .08); }
+/* planos: quatro cartões verticais lado a lado, com a mesma estrutura (nome, preço, o que inclui, botão no pé). O do meio
+   é o destaque (escuro); o último é o personalizado (azul, preço "A combinar"). Os cartões sobem um pouco no hover. */
+.plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(14px, 1.4vw, 22px); align-items: stretch; }
+.plan { display: flex; border-radius: var(--radius-lg); background: var(--sf-white); color: var(--sf-dark); box-shadow: 0 14px 34px rgba(4, 43, 32, .08); transition: transform .45s var(--ease), box-shadow .45s ease; }
+@media (hover: hover) { .plan:hover { transform: translateY(-8px); box-shadow: 0 26px 50px rgba(4, 43, 32, .16); } }
 .plan--focus { background: var(--sf-dark); color: #fff; }
-.plan-inner {
-  display: grid; grid-template-columns: minmax(230px, .9fr) minmax(0, 2fr) minmax(230px, .7fr); grid-template-areas: "cab lista acao" "preco lista acao";
-  gap: 6px clamp(28px, 3.4vw, 56px); align-items: start; padding: clamp(28px, 2.8vw, 44px) clamp(28px, 3.2vw, 52px);
-}
-.plan-inner > header { grid-area: cab; }
-.plan h3 { font-size: clamp(28px, 2.4vw, 38px); font-weight: 700; line-height: 1.1; letter-spacing: -.015em; }
+.plan--custom { background: var(--sf-blue); }
+.plan-inner { display: flex; flex-direction: column; width: 100%; padding: clamp(24px, 2vw, 34px); }
+.plan h3 { font-size: clamp(25px, 1.9vw, 31px); font-weight: 700; line-height: 1.1; letter-spacing: -.01em; }
 .plan-tag { margin-top: 6px; font-size: 15px; font-weight: 600; color: rgba(4, 43, 32, .72); }
 .plan--focus .plan-tag { color: var(--sf-lime); }
-.plan-price { grid-area: preco; align-self: end; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; margin-top: 18px; font-variant-numeric: tabular-nums; }
+.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; min-height: 74px; margin-top: 22px; padding-bottom: 22px; border-bottom: 2px solid rgba(4, 43, 32, .14); font-variant-numeric: tabular-nums; }
+.plan--focus .plan-price { border-color: rgba(255, 255, 255, .2); }
+.plan--custom .plan-price { border-color: rgba(4, 43, 32, .25); }
 .plan-cur { font-size: 16px; font-weight: 700; }
-.plan-price strong { font-size: clamp(40px, 3.4vw, 54px); font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+.plan-price strong { font-size: clamp(34px, 2.7vw, 46px); font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+.plan-price--texto strong { font-size: clamp(28px, 2.2vw, 36px); align-self: flex-end; }
 .plan--focus .plan-price strong { color: var(--sf-lime); }
 .plan-per { font-size: 16px; font-weight: 600; color: rgba(4, 43, 32, .72); }
 .plan--focus .plan-per { color: rgba(255, 255, 255, .78); }
-.plan-list { grid-area: lista; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px clamp(20px, 2.4vw, 40px); align-content: start; padding-left: clamp(24px, 3vw, 48px); border-left: 2px solid rgba(4, 43, 32, .12); }
-.plan--focus .plan-list { border-color: rgba(255, 255, 255, .2); }
-.plan-list li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; font-size: 15.5px; line-height: 1.4; font-weight: 500; }
+.plan-list { display: grid; gap: 12px; align-content: start; flex: 1; margin: 22px 0 28px; }
+.plan-list li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; font-size: 15px; line-height: 1.4; font-weight: 500; }
 .plan-list svg { width: 18px; height: 18px; margin-top: 2px; fill: var(--sf-dark); }
 .plan--focus .plan-list svg { fill: var(--sf-lime); }
-.plan .btn { grid-area: acao; align-self: center; width: 100%; padding-inline: 18px; white-space: nowrap; text-align: center; }
-.plan:not(.plan--focus) .btn:hover { background: var(--sf-blue); color: var(--sf-dark); }
-.plans-note { max-width: 1180px; margin: 24px auto 0; font-size: 14.5px; }
-@media (min-width: 1001px) and (min-height: 760px) {
-  .plan { position: sticky; top: calc(124px + var(--i, 0) * 58px); }
-}
-@media (max-width: 1000px) {
-  .plans-head { grid-template-columns: 1fr; align-items: start; }
-  .plan-inner { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "cab preco" "lista lista" "acao acao"; gap: 22px 28px; }
-  .plan-price { margin-top: 0; justify-self: end; }
-  .plan-list { padding: 22px 0 0; border-left: 0; border-top: 2px solid rgba(4, 43, 32, .12); }
-}
-@media (max-width: 640px) {
-  .plan-inner { grid-template-columns: 1fr; grid-template-areas: "cab" "preco" "lista" "acao"; }
-  .plan-price { justify-self: start; }
-  .plan-list { grid-template-columns: 1fr; }
-}
+.plan .btn { width: 100%; }
+.plan:not(.plan--focus):not(.plan--custom) .btn:hover { background: var(--sf-blue); color: var(--sf-dark); }
+.plan--custom .btn:hover { background: #0a4a38; color: #fff; }
+.plans-note { margin-top: 20px; font-size: 14.5px; }
+@media (max-width: 1180px) { .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1000px) { .plans-head { grid-template-columns: 1fr; align-items: start; } }
+@media (max-width: 640px) { .plans { grid-template-columns: 1fr; } .plan-price { min-height: 0; } }
 .plan-invite {
   --r: var(--radius-lg);
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 40px;
@@ -1001,3 +995,10 @@ html.intro-active::before {
 @keyframes sf-i-spin { 0% { opacity: 0; transform: rotate(-40deg); } 18% { opacity: 1; } 100% { opacity: 1; transform: rotate(500deg); } }
 @keyframes sf-i-letter { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
 @keyframes sf-i-pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+
+/* ---------- Leque das peças invadindo a faixa seguinte ----------
+   Com JS (leque montado) a faixa bege sobe por baixo do leque: some o vazio entre as duas seções e as peças das pontas e os
+   traços do globo cruzam a divisa — sobre o bege os traços ganham outro tom sozinhos, porque são translúcidos. */
+html.js #siteflux { position: relative; z-index: 3; }
+html.js #siteflux > .open { padding-bottom: 0; }
+html.js #recursos { margin-top: calc(-1 * clamp(110px, 12vw, 190px)); padding-top: calc(var(--pad-y) + clamp(110px, 12vw, 190px)); }

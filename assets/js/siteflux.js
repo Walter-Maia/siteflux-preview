@@ -643,6 +643,7 @@
     function ease(t) { return 1 - Math.pow(1 - t, 4); }
     function place(t, e, x, y) {
       var k = 1 - e;
+      t.e = e;
       t.el.style.transform = 'translate3d(' + (x * k).toFixed(1) + 'px,' + (y * k).toFixed(1) + 'px,0) rotate(' + (t.r * k).toFixed(2) + 'deg) scale(' + (0.94 + 0.06 * e).toFixed(3) + ')';
       t.el.style.opacity = clamp(e * 1.6).toFixed(3);
     }
@@ -669,6 +670,16 @@
           place(t, e, rise ? 0 : (right ? 1 : -1) * vw * 0.6, vh * 0.06);
         });
       }
+      marca();
+    }
+    // quem acabou de chegar fica marcado (.is-now) até o próximo chegar; com todos no lugar, o conjunto inteiro (.is-all)
+    function marca() {
+      var ordem = tiles.filter(function (t) { return t.el.classList.contains('step'); }).sort(function (a, b) { return a.i - b.i; });
+      if (!ordem.length) return;
+      var todos = ordem.every(function (t) { return t.e >= 0.985; }), agora = -1;
+      ordem.forEach(function (t, k) { if (t.e >= 0.6) agora = k; });
+      pin.classList.toggle('is-all', todos);
+      ordem.forEach(function (t, k) { t.el.classList.toggle('is-now', !todos && k === agora); });
     }
     function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
     function measure() { // posição de cada peça dentro do painel, sem contar o transform
@@ -686,7 +697,7 @@
       if (want !== on) {
         on = want;
         pin.classList.toggle('is-fly', on);
-        if (!on) tiles.forEach(function (t) { t.el.style.transform = ''; t.el.style.opacity = ''; });
+        if (!on) { tiles.forEach(function (t) { t.el.style.transform = ''; t.el.style.opacity = ''; t.el.classList.remove('is-now'); }); pin.classList.remove('is-all'); }
       }
       // prende na tela só quando o painel de três colunas cabe (com alguma redução) na janela
       pin.classList.remove('is-pinned');
