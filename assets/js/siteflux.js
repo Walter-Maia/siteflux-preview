@@ -652,7 +652,8 @@
       if (!on) return;
       var vh = window.innerHeight, vw = window.innerWidth;
       if (pinned) {
-        var r = pin.getBoundingClientRect(), total = Math.max(1, pin.offsetHeight - vh);
+        var palcoEl = pin.querySelector('.bento-stage');
+        var r = pin.getBoundingClientRect(), total = Math.max(1, pin.offsetHeight - (palcoEl ? palcoEl.offsetHeight : vh)); // o trecho preso dura até o palco encostar no fim
         if (r.top > vh * 1.3 || r.bottom < -vh * 0.3) return;
         // começa quando o título já saiu de cena e termina a 85 % do trecho preso: o resto é para olhar
         var p = clamp((vh * 0.25 - r.top) / (vh * 0.25 + total * 0.85));
@@ -701,13 +702,17 @@
       }
       // prende na tela só quando o painel de três colunas cabe (com alguma redução) na janela
       pin.classList.remove('is-pinned');
+      pin.style.height = '';
       pin.style.removeProperty('--bento-scale');
       pinned = false;
       if (on && window.innerWidth > 1100) {
         var room = window.innerHeight - 92 - 120, scale = Math.min(1, room / Math.max(1, grid.offsetHeight));
-        if (scale >= 0.62) {
+        var palco = pin.querySelector('.bento-stage');
+        var cabe = !palco || palco.scrollHeight + 136 + 28 <= window.innerHeight; // conteúdo inteiro abaixo do topo, com folga
+        if (scale >= 0.62 && cabe) {
           pinned = true;
           pin.classList.add('is-pinned');
+          if (palco) pin.style.height = Math.round(palco.offsetHeight + window.innerHeight * 1.3) + 'px'; // conteúdo + 130 % da janela de scroll preso
           pin.style.setProperty('--bento-scale', scale.toFixed(3));
         }
       }

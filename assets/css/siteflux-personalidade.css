@@ -171,7 +171,7 @@ html.galeria-aberta { overflow: hidden; }
 .galeria-fechar svg, .galeria-seta svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .galeria-seta { padding: 0; width: 48px; }
 
-.galeria-titulo { grid-area: titulo; align-self: end; min-width: 0; font-size: clamp(32px, 3.6vw, 60px); font-weight: 600; line-height: 1.02; letter-spacing: -.02em; text-wrap: balance; overflow-wrap: anywhere; }
+.galeria-titulo { font-family: var(--font-display); grid-area: titulo; align-self: end; min-width: 0; font-size: clamp(32px, 3.6vw, 60px); font-weight: 600; line-height: 1.02; letter-spacing: -.02em; text-wrap: balance; overflow-wrap: anywhere; }
 .galeria-desc { grid-area: desc; align-self: start; margin-top: clamp(14px, 1.6vw, 22px); max-width: 40ch; font-size: clamp(15.5px, 1.1vw, 17px); line-height: 1.6; color: var(--g-mut); }
 
 /* palco: tela + legenda + setas/miniaturas com a MESMA largura, encostados uns nos outros */

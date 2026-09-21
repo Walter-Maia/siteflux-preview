@@ -4,7 +4,13 @@
    blocos amplos arredondados sobre o verde-lima, pílulas, setas e traços.
    ========================================================================== */
 
+/* Space Grotesk (OFL), variável 300–700, hospedada em assets/fonts: só para os títulos grandes (--font-display).
+   O texto corrido continua em Montserrat. */
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 300 700; font-display: swap; src: url('../fonts/space-grotesk-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 300 700; font-display: swap; src: url('../fonts/space-grotesk-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
 :root {
+  --font-display: 'Space Grotesk', 'Montserrat', 'Segoe UI', Arial, sans-serif;
   --sf-dark: #042b20;
   --sf-lime: #ccd961;
   --sf-blue: #3cbcd5;
@@ -216,7 +222,7 @@ html.js .nav li:not(.nav-cta):hover::before, html.js .nav li:not(.nav-cta):has(a
 html.js .nav a:not(.btn) {
   /* o link ocupa a linha inteira: clicar em qualquer ponto da faixa leva à seção */
   position: relative; z-index: 1; display: block; min-height: 0; padding: 4px 4vw 4px 8vw; border-radius: 0;
-  font-size: clamp(26px, min(6vw, 7.8vh), 80px); font-weight: 600; line-height: 1.2; letter-spacing: -.02em;
+  font-family: var(--font-display); font-size: clamp(26px, min(6vw, 7.8vh), 80px); font-weight: 600; line-height: 1.2; letter-spacing: -.02em;
   color: var(--sf-dark); transition: color .3s ease;
 }
 /* as letras em rolagem usam a entrelinha do próprio link (o padrão de 1,5 deixaria as linhas altas demais) */
@@ -276,7 +282,8 @@ main { max-width: var(--sf-max); margin: 0 auto; }
 .eyebrow::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--sf-blue); flex: none; }
 .open .eyebrow::before, .box--blue .eyebrow::before { background: var(--sf-dark); }
 .h2 {
-  font-size: clamp(32px, 4.6vw, 60px); font-weight: 600; line-height: 1.04; letter-spacing: -.015em;
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4.6vw, 60px); font-weight: 600; line-height: 1.04; letter-spacing: -.025em;
   text-wrap: balance;
 }
 .lead { font-size: clamp(17px, 1.35vw, 20px); line-height: 1.55; max-width: 56ch; }
@@ -295,7 +302,8 @@ main { max-width: var(--sf-max); margin: 0 auto; }
   padding-top: clamp(64px, 7vw, 112px); padding-bottom: clamp(64px, 7vw, 112px);
 }
 .hero h1 {
-  font-size: clamp(40px, 5.9vw, 92px); font-weight: 600; line-height: 1; letter-spacing: -.02em;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5.9vw, 92px); font-weight: 600; line-height: 1; letter-spacing: -.03em;
 }
 .hero h1 .u { text-decoration: underline; text-decoration-color: var(--sf-blue); text-decoration-thickness: .06em; text-underline-offset: .12em; }
 .hero h1 .lime { color: var(--sf-lime); display: block; }
@@ -735,13 +743,13 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .story.is-story .story-stage {
   position: sticky; top: 0; height: 100vh; height: 100svh;
   grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: 14px;
-  padding: 112px 0 14px;
+  padding: 136px 0 14px; /* abaixo do slogan da logo, com folga */
 }
 .story.is-story .device-fig { perspective: 1400px; } /* a perspectiva precisa estar no pai direto do tablet */
 .story.is-story .device { transform-origin: 50% 0; will-change: transform, opacity; }
 /* proporção travada: a tela do tablet é sempre 1,89:1 e o tamanho vem da ALTURA da janela (o que sobra entre o
    cabeçalho e a legenda), então o enquadramento é o mesmo em qualquer resolução ou zoom; o conteúdo escala junto (cqi) */
-.story.is-story .device-fig { max-width: none; width: min(100%, max(420px, calc((100vh - 342px) * 1.89 + 48px))); width: min(100%, max(420px, calc((100svh - 342px) * 1.89 + 48px))); }
+.story.is-story .device-fig { max-width: none; width: min(100%, max(420px, calc((100vh - 366px) * 1.89 + 48px))); width: min(100%, max(420px, calc((100svh - 366px) * 1.89 + 48px))); }
 .story.is-story .device-screen { height: auto; aspect-ratio: 1.89; }
 .story.is-story .device-track { will-change: transform; }
 .story.is-story .device-fig figcaption { display: none; }
@@ -779,14 +787,16 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
    chegam, e a linha que os liga se desenha junto (--bento-p). Sem JS ou com movimento reduzido: tudo parado, no lugar. */
 #como-funciona { overflow: hidden; overflow: clip; } /* os passos nascem fora da tela sem criar rolagem lateral */
 .bento-pin.is-fly [data-fly] { will-change: transform, opacity; }
-/* no voo, o número fica azul só em quem acabou de chegar (.is-now); quando os quatro chegaram, todos ficam azuis (.is-all) */
+/* no voo, o número chega AZUL (.is-now) e fica VERDE quando o próximo chega; com os quatro no lugar, todos ficam verdes */
 .bento-pin.is-fly .step .step-num { background: var(--sf-dark); color: var(--sf-lime); transition: background-color .45s ease, color .45s ease, transform .5s cubic-bezier(.34, 1.56, .64, 1); }
-.bento-pin.is-fly .step.is-now .step-num, .bento-pin.is-fly.is-all .step .step-num { background: var(--sf-blue); color: var(--sf-dark); }
+.bento-pin.is-fly .step.is-now .step-num { background: var(--sf-blue); color: var(--sf-dark); }
 .bento-pin.is-fly .step.is-now .step-num { transform: scale(1.12); }
 .bento-pin.is-fly .step h3 { transition: color .45s ease; }
 .bento-pin.is-fly .steps-line path { stroke-dashoffset: calc(1 - var(--bento-p, 1)); }
 .bento-pin.is-pinned { height: calc(100vh + 130vh); margin-bottom: calc(-1 * var(--pad-y)); } /* o palco centrado já deixa ar embaixo (não soma o respiro da seção); espaço de scroll para quatro entradas, uma de cada vez */
-.bento-pin.is-pinned .bento-stage { position: sticky; top: 0; height: 100vh; height: 100svh; display: grid; align-content: center; padding-top: 112px; }
+/* o palco preso tem a altura do próprio conteúdo (não 100vh): quando solta, a seção seguinte vem logo, sem um vão vazio */
+.bento-pin.is-pinned .bento-stage { position: sticky; top: 0; display: grid; padding: 136px 0 32px; }
+#como-funciona:has(.bento-pin.is-pinned) + #planos { padding-top: clamp(56px, 6vw, 96px); } /* o palco preso já termina com ar embaixo */
 @media print { .bento-pin.is-pinned { height: auto; } .bento-pin.is-pinned .bento-stage { position: static; height: auto; } }
 
 /* ---------- Como funciona ---------- */
@@ -824,37 +834,66 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .plans-head { max-width: none; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 24px clamp(32px, 5vw, 96px); align-items: end; margin-bottom: clamp(36px, 4vw, 64px); }
 .plans-head .h2 { max-width: 16ch; }
 .plans-head .lead { margin-top: 0; padding-bottom: .3em; }
-/* planos: quatro cartões verticais lado a lado, com a mesma estrutura (nome, preço, o que inclui, botão no pé). O do meio
-   é o destaque (escuro); o último é o personalizado (azul, preço "A combinar"). Os cartões sobem um pouco no hover. */
+/* planos: quatro cartões verticais lado a lado, com a mesma estrutura (capa com nome, preço, o que inclui, botão no pé).
+   Cada cartão tem uma "capa" arredondada encaixada no topo (índice em pílula + traços do globo recortados no canto), e a cor
+   da capa sobe de tom a cada plano: bege, lima-claro, verde (fluxPro, o destaque, cartão todo escuro) e azul (Personalizado). O <li> é só a célula (e o contêiner das medidas em cqi); o visual e o
+   hover ficam no .plan-inner para não brigar com o transform do data-reveal. */
 .plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(14px, 1.4vw, 22px); align-items: stretch; }
-.plan { display: flex; border-radius: var(--radius-lg); background: var(--sf-white); color: var(--sf-dark); box-shadow: 0 14px 34px rgba(4, 43, 32, .08); transition: transform .45s var(--ease), box-shadow .45s ease; }
-@media (hover: hover) { .plan:hover { transform: translateY(-8px); box-shadow: 0 26px 50px rgba(4, 43, 32, .16); } }
-.plan--focus { background: var(--sf-dark); color: #fff; }
-.plan--custom { background: var(--sf-blue); }
-.plan-inner { display: flex; flex-direction: column; width: 100%; padding: clamp(24px, 2vw, 34px); }
-.plan h3 { font-size: clamp(25px, 1.9vw, 31px); font-weight: 700; line-height: 1.1; letter-spacing: -.01em; }
-.plan-tag { margin-top: 6px; font-size: 15px; font-weight: 600; color: rgba(4, 43, 32, .72); }
+.plan { display: flex; container-type: inline-size; }
+.plan-inner {
+  --cap: var(--sf-beige); --ink: var(--sf-dark); --soft: rgba(4, 43, 32, .72); --rule: rgba(4, 43, 32, .28); --pad: clamp(16px, 7cqi, 26px);
+  display: flex; flex-direction: column; width: 100%; padding: 8px 8px var(--pad);
+  border-radius: var(--radius-lg); background: var(--sf-white); color: var(--ink);
+  box-shadow: 0 18px 36px -22px rgba(4, 43, 32, .45);
+  transition: transform .5s var(--ease), box-shadow .5s var(--ease);
+}
+/* fluxGo e Personalizado: o corpo do cartão é o tom da própria capa diluído em branco (lima e azul da marca) */
+.plan:nth-child(2) .plan-inner { --cap: var(--sf-lime); background: #f4f7dc; background: color-mix(in srgb, var(--sf-lime) 24%, #fff); }
+.plan--focus .plan-inner { --cap: #0a4a38; --ink: #fff; --soft: rgba(255, 255, 255, .78); --rule: rgba(255, 255, 255, .3); background: var(--sf-dark); box-shadow: 0 26px 44px -22px rgba(4, 43, 32, .7); }
+.plan--custom .plan-inner { --cap: var(--sf-blue); --rule: rgba(4, 43, 32, .34); background: #e0f4f8; background: color-mix(in srgb, var(--sf-blue) 18%, #fff); }
+@media (hover: hover) {
+  .plan:hover .plan-inner { transform: translateY(-8px); box-shadow: 0 34px 48px -24px rgba(4, 43, 32, .5); }
+  .plan:hover .plan-mark { transform: rotate(-8deg) scale(1.06); }
+}
+.plan-inner > :not(header) { margin-inline: calc(var(--pad) - 8px); }
+/* capa */
+.plan header { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; padding: 16px calc(var(--pad) - 8px) 20px; border-radius: 20px; background: var(--cap); }
+.plan-num { display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; border-radius: 999px; background: var(--sf-dark); color: var(--sf-lime); font-size: 12px; font-weight: 700; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+.plan--focus .plan-num { background: var(--sf-lime); color: var(--sf-dark); }
+.plan-mark { position: absolute; right: -58px; top: -62px; width: min(78%, 252px); fill: var(--sf-dark); opacity: .09; pointer-events: none; transition: transform .9s var(--ease); }
+.plan--focus .plan-mark { fill: var(--sf-lime); opacity: .2; }
+.plan h3 { position: relative; margin-top: clamp(30px, 14cqi, 46px); font-size: clamp(24px, 9.4cqi, 31px); font-weight: 700; line-height: 1.1; letter-spacing: -.015em; }
+.plan-tag { position: relative; margin-top: 6px; font-size: 14.5px; font-weight: 600; color: var(--soft); }
 .plan--focus .plan-tag { color: var(--sf-lime); }
-.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; min-height: 74px; margin-top: 22px; padding-bottom: 22px; border-bottom: 2px solid rgba(4, 43, 32, .14); font-variant-numeric: tabular-nums; }
-.plan--focus .plan-price { border-color: rgba(255, 255, 255, .2); }
-.plan--custom .plan-price { border-color: rgba(4, 43, 32, .25); }
-.plan-cur { font-size: 16px; font-weight: 700; }
-.plan-price strong { font-size: clamp(34px, 2.7vw, 46px); font-weight: 700; line-height: 1; letter-spacing: -.02em; }
-.plan-price--texto strong { font-size: clamp(28px, 2.2vw, 36px); align-self: flex-end; }
+.plan--custom .plan-tag { color: var(--sf-dark); }
+/* preço: "R$" no alto, número grande, "/mês" na linha de base; a altura é fixa para os quatro alinharem */
+.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; min-height: clamp(40px, 15.5cqi, 54px); margin-top: 26px; font-variant-numeric: tabular-nums; }
+.plan-cur { align-self: flex-start; margin-top: .25em; font-size: 15px; font-weight: 700; }
+.plan-price strong { font-size: clamp(40px, 15.5cqi, 54px); font-weight: 700; line-height: 1; letter-spacing: -.035em; }
+.plan-price--texto { align-items: flex-end; }
+.plan-price--texto strong { font-size: clamp(28px, 10.6cqi, 37px); letter-spacing: -.02em; padding-bottom: .12em; }
 .plan--focus .plan-price strong { color: var(--sf-lime); }
-.plan-per { font-size: 16px; font-weight: 600; color: rgba(4, 43, 32, .72); }
-.plan--focus .plan-per { color: rgba(255, 255, 255, .78); }
-.plan-list { display: grid; gap: 12px; align-content: start; flex: 1; margin: 22px 0 28px; }
-.plan-list li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; font-size: 15px; line-height: 1.4; font-weight: 500; }
-.plan-list svg { width: 18px; height: 18px; margin-top: 2px; fill: var(--sf-dark); }
+.plan-per { font-size: 15px; font-weight: 600; color: var(--soft); }
+/* lista: linhas pontilhadas entre os itens, seta oficial como marcador */
+.plan-list { display: grid; align-content: start; flex: 1; margin-top: 24px; margin-bottom: 26px; }
+.plan-list li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; align-items: start; padding: 11px 0; border-top: 2px dotted var(--rule); font-size: 14.5px; line-height: 1.4; font-weight: 500; overflow-wrap: anywhere; text-wrap: balance; }
+.plan-list li:last-child { border-bottom: 2px dotted var(--rule); }
+.plan-list svg { width: 20px; height: 20px; fill: var(--sf-dark); }
 .plan--focus .plan-list svg { fill: var(--sf-lime); }
-.plan .btn { width: 100%; }
+.plan .btn { align-self: stretch; padding-inline: 16px; }
 .plan:not(.plan--focus):not(.plan--custom) .btn:hover { background: var(--sf-blue); color: var(--sf-dark); }
-.plan--custom .btn:hover { background: #0a4a38; color: #fff; }
+.plan--custom .btn { background: var(--sf-blue); color: var(--sf-dark); }
+.plan--custom .btn:hover { background: var(--sf-dark); color: #fff; }
 .plans-note { margin-top: 20px; font-size: 14.5px; }
+/* só nas 4 colunas o destaque cresce para cima e para baixo; o conteúdo continua alinhado com os vizinhos */
+@media (min-width: 1181px) {
+  .plans { padding-block: 14px; }
+  .plan--focus .plan-inner { margin-block: -14px; padding-bottom: calc(var(--pad) + 14px); }
+  .plan--focus header { padding-top: 30px; }
+}
 @media (max-width: 1180px) { .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 1000px) { .plans-head { grid-template-columns: 1fr; align-items: start; } }
-@media (max-width: 640px) { .plans { grid-template-columns: 1fr; } .plan-price { min-height: 0; } }
+@media (max-width: 640px) { .plans { grid-template-columns: 1fr; gap: 20px; } .plan h3 { margin-top: 26px; } }
 .plan-invite {
   --r: var(--radius-lg);
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 40px;

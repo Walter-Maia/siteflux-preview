@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="robots" content="noindex, nofollow" /><!-- cópia de teste: fora dos buscadores -->
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Siteflux — Site por assinatura: criação, publicação e manutenção</title>
 <meta name="description" content="O Siteflux é um clube de assinatura que cria, publica e mantém o site da sua empresa: design, SEO técnico, domínio, hospedagem e evolução mensal em um só serviço." />
 <meta name="theme-color" content="#042b20" />
@@ -15,11 +15,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="assets/css/siteflux.css?v=2.23.0" />
-<link rel="stylesheet" href="assets/css/siteflux-personalidade.css?v=2.23.0" />
+<link rel="preload" href="assets/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="assets/css/siteflux.css?v=2.27.0" />
+<link rel="stylesheet" href="assets/css/siteflux-personalidade.css?v=2.26.0" />
 <!-- Intro: só marca a página quando a abertura vai mesmo rodar (1x por sessão, sem hash, sem movimento reduzido, aba visível) -->
 <script>(function(){try{if(sessionStorage.getItem("sf-intro")||location.hash||document.hidden||matchMedia("(prefers-reduced-motion: reduce)").matches)return;document.documentElement.classList.add("intro-active")}catch(e){}})();</script>
-<script src="assets/js/siteflux.js?v=2.23.0" defer></script>
+<script src="assets/js/siteflux.js?v=2.26.0" defer></script>
 <script src="assets/js/siteflux-personalidade.js?v=2.23.0" defer></script>
 </head>
 <body>
@@ -648,6 +649,8 @@
         <li class="plan" data-reveal style="--i:0">
           <article class="plan-inner" aria-labelledby="plan-fluxStart">
             <header>
+              <span class="plan-num" aria-hidden="true">01</span>
+              <svg class="plan-mark" viewBox="0 0 595.76 447.37" aria-hidden="true" focusable="false"><use href="#sf-tracos"></use></svg>
               <h3 id="plan-fluxStart">fluxStart</h3>
               <p class="plan-tag">Presença Essencial</p>
             </header>
@@ -669,6 +672,8 @@
         <li class="plan" data-reveal style="--i:1">
           <article class="plan-inner" aria-labelledby="plan-fluxGo">
             <header>
+              <span class="plan-num" aria-hidden="true">02</span>
+              <svg class="plan-mark" viewBox="0 0 595.76 447.37" aria-hidden="true" focusable="false"><use href="#sf-tracos"></use></svg>
               <h3 id="plan-fluxGo">fluxGo</h3>
               <p class="plan-tag">Resultado Real</p>
             </header>
@@ -690,6 +695,8 @@
         <li class="plan plan--focus on-dark" data-reveal style="--i:2">
           <article class="plan-inner" aria-labelledby="plan-fluxPro">
             <header>
+              <span class="plan-num" aria-hidden="true">03</span>
+              <svg class="plan-mark" viewBox="0 0 595.76 447.37" aria-hidden="true" focusable="false"><use href="#sf-tracos"></use></svg>
               <h3 id="plan-fluxPro">fluxPro</h3>
               <p class="plan-tag">Escala e Evolução</p>
             </header>
@@ -711,6 +718,8 @@
         <li class="plan plan--custom" data-reveal style="--i:3">
           <article class="plan-inner" aria-labelledby="plan-personalizado">
             <header>
+              <span class="plan-num" aria-hidden="true">04</span>
+              <svg class="plan-mark" viewBox="0 0 595.76 447.37" aria-hidden="true" focusable="false"><use href="#sf-tracos"></use></svg>
               <h3 id="plan-personalizado">Personalizado</h3>
               <p class="plan-tag">Projeto sob medida</p>
             </header>
