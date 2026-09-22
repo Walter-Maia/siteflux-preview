@@ -657,7 +657,7 @@
     var grid = pin.querySelector('[data-bento-grid]');
     var tiles = Array.prototype.slice.call(pin.querySelectorAll('[data-fly]')).map(function (el) {
       var v = (el.getAttribute('data-fly') || '0,0,0,0').split(',').map(Number);
-      return { el: el, x: v[0] || 0, y: v[1] || 0, r: v[2] || 0, i: v[3] || 0, top: 0, mid: 0, h: 0 };
+      return { el: el, x: v[0] || 0, y: v[1] || 0, r: v[2] || 0, i: v[3] || 0, top: 0, mid: 0, h: 0, u: 0, e: 0 };
     });
     if (!grid || !tiles.length) return;
     var N = tiles.length, STEP = 0.78 / Math.max(1, N - 1), SPAN = 0.22; // a última peça termina em p = 1
@@ -665,9 +665,11 @@
 
     function clamp(v) { return Math.min(1, Math.max(0, v)); }
     function ease(t) { return 1 - Math.pow(1 - t, 4); }
-    function place(t, e, x, y) {
-      var k = 1 - e;
-      t.e = e;
+    // u = progresso LINEAR da peça (0 = fora, 1 = assentada): governa a lógica (cor, ordem); o easing só serve ao desenho
+    function place(t, u, x, y) {
+      var e = ease(u), k = 1 - e;
+      t.u = u; t.e = e;
+      t.done = u >= 1 || (Math.abs(x * k) <= 1 && Math.abs(y * k) <= 1 && Math.abs(t.r * k) <= 0.05); // assentada: resíduo ≤ 1 px e giro final
       t.el.style.transform = 'translate3d(' + (x * k).toFixed(1) + 'px,' + (y * k).toFixed(1) + 'px,0) rotate(' + (t.r * k).toFixed(2) + 'deg) scale(' + (0.94 + 0.06 * e).toFixed(3) + ')';
       t.el.style.opacity = clamp(e * 1.6).toFixed(3);
     }
@@ -682,27 +684,35 @@
         // começa quando o título já saiu de cena e termina a 85 % do trecho preso: o resto é para olhar
         var p = clamp((vh * 0.25 - r.top) / (vh * 0.25 + total * 0.85));
         pin.style.setProperty('--bento-p', p.toFixed(4)); // a linha que liga os passos se desenha junto
-        tiles.forEach(function (t) { place(t, ease(clamp((p - t.i * STEP) / SPAN)), t.x / 100 * vw, t.y / 100 * vh); });
+        tiles.forEach(function (t) { place(t, clamp((p - t.i * STEP) / SPAN), t.x / 100 * vw, t.y / 100 * vh); });
       } else {
         var g = grid.getBoundingClientRect();
         if (g.top > vh * 1.3 || g.bottom < -vh * 0.3) return;
-        pin.style.setProperty('--bento-p', clamp((vh * 0.9 - g.top) / Math.max(1, g.height + vh * 0.2)).toFixed(4));
-        tiles.forEach(function (t) {
-          // a peça começa a entrar quando o lugar dela aparece embaixo e assenta antes do meio da tela
-          var right = t.mid >= g.width / 2; // na mesma linha, a da direita entra um pouco depois
-          var e = ease(clamp((vh * (right ? 0.84 : 0.92) - (g.top + t.top)) / (vh * 0.5)));
-          var rise = t.x === 0 && Math.abs(t.y) < 20; // legenda: só sobe de leve, sem vir do lado
-          place(t, e, rise ? 0 : (right ? 1 : -1) * vw * 0.6, vh * 0.06);
-        });
+        if (vw > 1100) {
+          // quatro passos na mesma linha, mas sem prender (janela baixa): a MESMA sequência do modo preso (uma peça por
+          // janela de progresso, na ordem de data-fly), guiada pela posição do painel — nunca duas peças juntas
+          var q = clamp((vh * 0.92 - g.top) / (vh * 0.62));
+          pin.style.setProperty('--bento-p', q.toFixed(4));
+          tiles.forEach(function (t) { place(t, clamp((q - t.i * STEP) / SPAN), t.x / 100 * vw, t.y / 100 * vh); });
+        } else {
+          // uma coluna (celular/tablet): cada peça entra quando o lugar dela aparece embaixo, na ordem natural de leitura
+          pin.style.setProperty('--bento-p', clamp((vh * 0.9 - g.top) / Math.max(1, g.height + vh * 0.2)).toFixed(4));
+          tiles.forEach(function (t) {
+            var u = clamp((vh * 0.92 - (g.top + t.top)) / (vh * 0.5));
+            var rise = t.x === 0 && Math.abs(t.y) < 20; // legenda: só sobe de leve, sem vir do lado
+            place(t, u, rise ? 0 : -vw * 0.6, vh * 0.06);
+          });
+        }
       }
       marca();
     }
-    // quem acabou de chegar fica marcado (.is-now) até o próximo chegar; com todos no lugar, o conjunto inteiro (.is-all)
+    // a cor só muda quando a peça ASSENTA (u = 1: translação e giro zerados): o recém-chegado fica azul (.is-now) até o próximo
+    // assentar; com os quatro assentados, o conjunto inteiro (.is-all). Tudo derivado da posição de scroll, sem timers.
     function marca() {
       var ordem = tiles.filter(function (t) { return t.el.classList.contains('step'); }).sort(function (a, b) { return a.i - b.i; });
       if (!ordem.length) return;
-      var todos = ordem.every(function (t) { return t.e >= 0.985; }), agora = -1;
-      ordem.forEach(function (t, k) { if (t.e >= 0.6) agora = k; });
+      var todos = ordem.every(function (t) { return t.done; }), agora = -1;
+      ordem.forEach(function (t, k) { if (t.done) agora = k; });
       pin.classList.toggle('is-all', todos);
       ordem.forEach(function (t, k) { t.el.classList.toggle('is-now', !todos && k === agora); });
     }

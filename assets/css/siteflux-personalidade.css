@@ -152,13 +152,15 @@ html.galeria-aberta { overflow: hidden; }
 .galeria.is-closing { animation: galeria-sai .2s ease both; }
 @keyframes galeria-entra { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes galeria-sai { to { opacity: 0; } }
+/* 2.29 (pedido do Walter): UMA coluna centrada — topo · nome · tela principal (+ legenda) · anel giratório com uma seta de
+   cada lado · descrição. Sem a fila de miniaturas nem o contador. A tela principal tem a proporção das capturas e a largura
+   vem da altura da janela, para o conjunto caber sem rolar quando há altura; em janela baixa o diálogo rola normalmente. */
 .galeria-in {
-  display: grid; grid-template-columns: minmax(240px, 26%) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "topo topo" "titulo palco" "desc palco";
-  gap: 0 clamp(28px, 4vw, 64px);
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "topo" "titulo" "palco" "nav" "desc";
+  justify-items: center; align-content: start; gap: 0;
   box-sizing: border-box; min-height: 100%; padding: clamp(16px, 2.4vw, 36px) clamp(20px, 4vw, 64px) clamp(18px, 2.4vw, 36px);
 }
-.galeria-topo { grid-area: topo; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(14px, 1.8vw, 26px); }
+.galeria-topo { grid-area: topo; justify-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(12px, 1.6vw, 22px); }
 .galeria-tipo { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--g-mut); }
 .galeria-tipo::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--g-acc); }
 .galeria-fechar, .galeria-seta, .galeria-ampliar {
@@ -171,11 +173,11 @@ html.galeria-aberta { overflow: hidden; }
 .galeria-fechar svg, .galeria-seta svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .galeria-seta { padding: 0; width: 48px; }
 
-.galeria-titulo { font-family: var(--font-display); grid-area: titulo; align-self: end; min-width: 0; font-size: clamp(32px, 3.6vw, 60px); font-weight: 600; line-height: 1.02; letter-spacing: -.02em; text-wrap: balance; overflow-wrap: anywhere; }
-.galeria-desc { grid-area: desc; align-self: start; margin-top: clamp(14px, 1.6vw, 22px); max-width: 40ch; font-size: clamp(15.5px, 1.1vw, 17px); line-height: 1.6; color: var(--g-mut); }
+.galeria-titulo { font-family: var(--font-display); grid-area: titulo; min-width: 0; margin-bottom: clamp(12px, 1.6vw, 20px); font-size: clamp(26px, 3vw, 44px); font-weight: 600; line-height: 1.04; letter-spacing: -.02em; text-align: center; text-wrap: balance; overflow-wrap: anywhere; }
+.galeria-desc { grid-area: desc; margin-top: clamp(12px, 1.6vw, 20px); max-width: 60ch; font-size: clamp(15px, 1.05vw, 16.5px); line-height: 1.55; text-align: center; color: var(--g-mut); }
 
-/* palco: tela + legenda + setas/miniaturas com a MESMA largura, encostados uns nos outros */
-.galeria-palco { grid-area: palco; align-self: center; justify-self: center; min-width: 0; display: grid; gap: 12px; width: min(100%, calc((100dvh - 262px) * 1.6)); min-width: min(100%, 320px); touch-action: pan-y; }
+/* palco: tela + legenda, centrados; largura pela altura disponível (topo + nome + anel + descrição ≈ 520 px) */
+.galeria-palco { grid-area: palco; min-width: 0; display: grid; gap: 10px; width: min(100%, calc((100dvh - 480px) * 1.6), 960px); min-width: min(100%, 480px); touch-action: pan-y; } /* em janela baixa o diálogo rola um pouco; a tela não fica minúscula */
 .galeria-moldura {
   border-radius: 14px; overflow: hidden; background: var(--g-soft);
   box-shadow: 0 0 0 1px var(--g-line), 0 18px 44px rgba(0, 0, 0, .24);
@@ -194,50 +196,35 @@ html.galeria-aberta { overflow: hidden; }
 .galeria-aviso { position: absolute; inset: 0; display: grid; place-content: center; gap: 6px; padding: 24px; text-align: center; font-size: 15.5px; line-height: 1.5; color: var(--g-mut); }
 .galeria-aviso[hidden] { display: none; }
 .galeria-aviso b { color: var(--g-fg); font-size: 17px; }
-.galeria-conta { display: flex; align-items: baseline; gap: 12px; min-height: 24px; font-weight: 700; }
-.galeria-conta b { font-size: 13px; letter-spacing: .08em; color: var(--g-acc); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.galeria-conta span { font-size: clamp(16px, 1.2vw, 19px); }
+.galeria-conta { display: flex; justify-content: center; min-height: 22px; font-weight: 700; text-align: center; }
+.galeria-conta span { font-size: clamp(15px, 1.1vw, 18px); }
 
-.galeria-nav { display: flex; align-items: center; gap: 10px; }
-.galeria-minis { flex: 1; min-width: 0; display: flex; justify-content: center; gap: 8px; padding: 4px; margin: -4px 0; overflow-x: auto; scrollbar-width: thin; }
-.galeria-minis li { flex: 1 0 56px; max-width: 132px; }
-/* alvo de pelo menos 48 px de altura em qualquer largura: o botão cresce e a captura o preenche por cover; a tela principal não muda */
-.galeria-mini {
-  display: block; width: 100%; min-height: 48px; padding: 0; border: 0; border-radius: 8px; overflow: hidden; background: var(--g-soft); cursor: pointer;
-  box-shadow: 0 0 0 1px var(--g-line); opacity: .62; transition: opacity .25s ease, box-shadow .25s ease, transform .3s var(--ease);
-}
-.galeria-mini img { display: block; width: 100%; height: 100%; min-height: 48px; aspect-ratio: 1200 / 750; object-fit: cover; object-position: 50% 0; }
-.galeria-mini:hover { opacity: 1; }
-.galeria-mini[aria-pressed="true"] { opacity: 1; box-shadow: 0 0 0 2px var(--g-acc); transform: translateY(-2px); }
-.galeria-mini.is-loading { opacity: 1; box-shadow: 0 0 0 1px var(--g-acc); }
-.galeria-mini.is-erro { opacity: .35; }
-.galeria-ampliar { display: none; }
+/* anel com uma seta de cada lado; "Ampliar tela" (só até 899 px) numa linha própria embaixo */
+.galeria-nav { grid-area: nav; width: min(100%, 1100px); display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; grid-template-areas: "prev anel next" "amp amp amp"; align-items: center; gap: 8px 12px; margin-top: 4px; }
+.galeria-seta[data-dir="-1"] { grid-area: prev; } .galeria-seta[data-dir="1"] { grid-area: next; }
+.galeria-ampliar { display: none; grid-area: amp; justify-self: center; }
+/* sem o anel (movimento reduzido, janela baixa, sem 3D): as setas ficam juntas, no centro */
+.galeria-nav:has(.galeria-anel[hidden]) { grid-template-columns: 48px 32px 48px; justify-content: center; }
 
 @media (max-width: 899px) {
-  /* celular/tablet em pé: nome e categoria → tela → legenda → miniaturas e controles → explicação. Linhas automáticas, sem
-     esticar para 100 % da altura (era isso que abria um vazio entre a tela e as miniaturas); tela baixa rola normalmente. */
-  .galeria-in { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "topo" "titulo" "palco" "desc"; gap: 0; min-height: 0; align-content: start; }
   .galeria-topo { position: sticky; top: 0; z-index: 2; margin: 0 calc(-1 * clamp(20px, 4vw, 64px)) 6px; padding: 8px clamp(20px, 4vw, 64px); background: var(--g-bg); }
   .galeria-tipo { font-size: 12px; letter-spacing: .06em; }
-  .galeria-titulo { align-self: start; font-size: clamp(26px, 7vw, 40px); margin-bottom: 14px; }
+  .galeria-titulo { font-size: clamp(24px, 6.4vw, 36px); margin-bottom: 12px; }
   .galeria-palco { width: 100%; min-width: 0; }
   .galeria-barra { height: 22px; padding-inline: 12px; } .galeria-barra i { width: 7px; height: 7px; }
-  .galeria-nav { display: grid; grid-template-columns: 48px 48px minmax(0, 1fr); grid-template-areas: "minis minis minis" "prev next amp"; gap: 12px 10px; }
-  .galeria-minis { grid-area: minis; gap: 6px; justify-content: flex-start; }
-  .galeria-minis li { max-width: none; }
-  .galeria-seta[data-dir="-1"] { grid-area: prev; } .galeria-seta[data-dir="1"] { grid-area: next; }
-  .galeria-ampliar { display: inline-flex; grid-area: amp; justify-self: end; }
-  .galeria-desc { margin-top: 20px; max-width: 52ch; }
+  .galeria-nav { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px 8px; }
+  .galeria-seta { width: 44px; min-width: 44px; min-height: 44px; }
+  .galeria-ampliar { display: inline-flex; }
+  .galeria-desc { margin-top: 16px; max-width: 52ch; }
   /* "Ampliar tela": a captura desktop fica pequena no celular; ampliada, rola dentro da moldura nos dois eixos e a troca por arrasto é suspensa */
   .galeria-tela.is-zoom { overflow: auto; touch-action: pan-x pan-y; overscroll-behavior: contain; }
   .galeria-tela.is-zoom img { display: none; }
   .galeria-tela.is-zoom img.is-on { display: block; position: static; width: 240%; height: auto; transform: none; transition: none; }
 }
-@media (max-height: 560px) and (min-width: 900px) { .galeria-desc { display: none; } .galeria-titulo { align-self: center; grid-row: 2 / 4; font-size: clamp(26px, 3vw, 40px); } }
+@media (max-height: 560px) and (min-width: 900px) { .galeria-desc { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .galeria[open], .galeria.is-closing { animation: none; }
   .galeria-tela img { transform: none; transition: none; }
-  .galeria-mini { transition: none; }
 }
 /* com JS a pasta inteira abre a galeria (a ação acessível continua sendo o resumo "Explorar projeto") */
 html.js .pasta-pilha { cursor: pointer; }
@@ -245,9 +232,8 @@ html.js .pasta-pilha { cursor: pointer; }
 /* ---------- 4. Anel cilíndrico dentro da galeria do projeto (skill galeria-anel-cilindrico; o JS monta os painéis) ----------
    De um lado o anel 3D com todas as telas do projeto; do outro a tela normal. O anel segue a tela escolhida e pode ser
    arrastado; um toque na metade esquerda/direita volta/avança. Decorativo para leitores de tela. Some com movimento reduzido. */
-.galeria-in { grid-template-columns: minmax(300px, 34%) minmax(0, 1fr); grid-template-rows: auto auto auto minmax(0, 1fr); grid-template-areas: "topo topo" "titulo palco" "anel palco" "desc palco"; } /* nome, anel e descrição juntos no alto da coluna */
-.galeria-titulo { align-self: start; }
-.galeria-anel { grid-area: anel; align-self: start; margin-top: clamp(10px, 1.6vw, 24px); position: relative; min-width: 0; --ga-w: clamp(170px, 17vw, 300px); margin-inline: calc(-1 * clamp(20px, 4vw, 64px)) calc(-1 * clamp(14px, 2vw, 32px)); }
+/* 2.29: o anel fica ABAIXO da tela principal, entre as duas setas (área "anel" do .galeria-nav) */
+.galeria-anel { grid-area: anel; position: relative; min-width: 0; --ga-w: clamp(140px, 12.5vw, 200px); }
 .galeria-anel[hidden] { display: none; }
 .ga-regua { position: absolute; left: 0; top: 0; width: var(--ga-w); height: 0; visibility: hidden; pointer-events: none; }
 .ga-palco { position: relative; height: calc(var(--ga-w) * .86 + 44px); /* painel da frente (0,625) + o que a inclinação baixa a frente (≈ 0,3) + a faixa de trás que sobe */ perspective: 1100px; perspective-origin: 50% 62%; overflow: hidden; touch-action: pan-y; cursor: grab; }
@@ -255,24 +241,21 @@ html.js .pasta-pilha { cursor: pointer; }
 .ga-giro, .ga-painel { position: absolute; left: 50%; top: calc(100% - var(--ga-w) * .62 - 18px); width: 0; height: 0; transform-style: preserve-3d; }
 .ga-painel { left: 0; top: 0; }
 .ga-painel i { position: absolute; left: 0; top: 0; display: block; background-repeat: no-repeat; background-color: var(--g-soft); backface-visibility: visible; pointer-events: none; }
-.galeria-desc { align-self: start; margin-top: clamp(10px, 1.4vw, 20px); }
 @media (max-width: 899px) {
-  .galeria-in { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "topo" "titulo" "anel" "palco" "desc"; }
-  .galeria-anel { --ga-w: clamp(150px, 44vw, 260px); margin-inline: calc(-1 * clamp(20px, 4vw, 64px)); margin-bottom: 12px; }
+  .galeria-anel { --ga-w: clamp(120px, 34vw, 200px); }
   .ga-palco { height: calc(var(--ga-w) * .86 + 36px); perspective: 820px; }
-  .galeria-desc { align-self: start; }
 }
-@media (max-height: 560px) and (min-width: 900px) { .galeria-anel { display: none; } }
-@media (prefers-reduced-motion: reduce) { .galeria-anel { display: none; } }
+@media (max-height: 560px) and (min-width: 900px) { .galeria-anel { display: none; } .galeria-nav { grid-template-columns: 48px 32px 48px; justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .galeria-anel { display: none; } .galeria-nav { grid-template-columns: 48px 32px 48px; justify-content: center; } }
 
 /* ---------- 5. Projetos em carrossel de capas (o JS monta a janela, posiciona as capas e cria os controles) ----------
    Referência do Walter: a tela do projeto da vez grande no centro e as vizinhas menores, um pouco mais baixas, levemente
    giradas e escurecidas, saindo pelas bordas. Nada de pasta nem folhas aqui: a capa (janela de navegador com a captura)
    é o cartão. Nome, tipo, resumo e "Explorar projeto" aparecem só sob a capa do centro. Clicar na capa do centro abre a
    galeria em tela cheia de sempre; clicar numa vizinha traz ela para o centro. Sem JS: a grade de pastas. */
-.pastas-janela { position: relative; overflow: hidden; margin-inline: calc(-1 * var(--pad-x)); padding-block: 12px 4px; touch-action: pan-y; cursor: grab; }
+.pastas-janela { --cw: min(56vw, 900px); position: relative; overflow: hidden; margin-inline: calc(-1 * var(--pad-x)); padding-block: 12px 4px; touch-action: pan-y; cursor: grab; } /* --cw na janela: a lista e as setas (irmãs) leem a mesma largura de capa */
 .pastas-janela.is-dragging { cursor: grabbing; }
-.pastas.is-slider { --cw: min(56vw, 900px); display: block; position: relative; max-width: none; margin: 0; }
+.pastas.is-slider { display: block; position: relative; max-width: none; margin: 0; }
 .pastas.is-slider > .pasta {
   position: absolute; left: 50%; top: 0; width: var(--cw); margin-left: calc(var(--cw) / -2);
   transform-origin: 50% 40%; will-change: transform; transition: transform .75s var(--ease), filter .6s ease, opacity .5s ease;
@@ -282,24 +265,26 @@ html.js .pasta-pilha { cursor: pointer; }
 .pastas.is-slider .pasta-fundo, .pastas.is-slider .pasta-folha { display: none; }
 .pastas.is-slider .pasta-capa, .pastas.is-slider .pasta:hover .pasta-capa, .pastas.is-slider .pasta:focus-within .pasta-capa { transform: none; border-radius: clamp(10px, 1.2vw, 18px); box-shadow: 0 30px 70px rgba(0, 0, 0, .45); }
 .pastas.is-slider .pasta-barra { height: clamp(16px, 1.6vw, 24px); }
-.pastas.is-slider .pasta-info { padding-top: clamp(20px, 2.2vw, 32px); text-align: center; opacity: 0; transform: translateY(10px); transition: opacity .45s ease, transform .6s var(--ease); }
+/* 2.29 (pedido do Walter): sob a capa só o NOME do projeto, e o nome é o botão que abre a galeria (o JS o cria dentro do h3).
+   Categoria, resumo, "5 telas" e "Explorar projeto" saem da apresentação; o <details> continua no HTML (dados e fallback sem JS). */
+.pastas.is-slider .pasta-info { padding-top: clamp(14px, 1.6vw, 22px); text-align: center; opacity: 0; transform: translateY(10px); transition: opacity .45s ease, transform .6s var(--ease); }
 .pastas.is-slider .pasta.is-atual .pasta-info { opacity: 1; transform: none; transition-delay: .18s; }
-.pastas.is-slider .pasta-titulo { flex-direction: column; align-items: center; gap: 8px; }
-.pastas.is-slider .pasta-titulo h3 { font-size: clamp(26px, 2.8vw, 42px); }
-.pastas.is-slider .pasta-resumo { margin: 12px auto 0; font-size: clamp(16px, 1.25vw, 18.5px); }
-.pastas.is-slider .pasta-detalhes { max-width: 420px; margin: 18px auto 0; }
-/* a navegação fica NO ALTO, entre o título e as capas: quem chega já vê que há vários projetos e por onde passar */
-.pastas-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 clamp(14px, 1.8vw, 26px); }
-#projetos { padding-bottom: clamp(36px, 4vw, 64px); } /* sem a navegação embaixo, o pé da caixa não precisa de tanto ar */
-.pastas-conta { font-size: 13.5px; font-weight: 800; letter-spacing: .08em; color: var(--sf-lime); font-variant-numeric: tabular-nums; }
-.pastas-pontos { display: flex; align-items: center; margin-inline: auto; }
-.pastas-ponto { position: relative; width: 36px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; }
-.pastas-ponto::before { content: ''; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; border-radius: 999px; background: rgba(255, 255, 255, .34); transform: translate(-50%, -50%); transition: width .4s var(--ease), background-color .3s ease; }
-.pastas-ponto[aria-current="true"]::before { width: 28px; background: var(--sf-lime); }
-.pastas-setas { display: flex; gap: 10px; }
-.pastas-seta { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; padding: 0; border: 2px solid rgba(255, 255, 255, .4); border-radius: 50%; background: transparent; color: #fff; cursor: pointer; transition: border-color .3s ease, color .3s ease, transform .3s var(--ease); }
+.pastas.is-slider .pasta-titulo { justify-content: center; }
+.pastas.is-slider .pasta-titulo h3 { font-size: clamp(24px, 2.6vw, 40px); }
+.pastas.is-slider .pasta-rotulo, .pastas.is-slider .pasta-resumo { display: none; }
+html.tem-dialog .pastas.is-slider .pasta-detalhes { display: none; } /* só some quando a galeria em <dialog> existe (senão o <details> é o único caminho para as telas) */
+.pasta-abrir { display: inline-block; padding: 2px 6px; margin: -2px -6px; border: 0; border-radius: 10px; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; cursor: pointer; transition: color .25s ease; }
+.pasta-abrir:hover { color: var(--aba); }
+.pasta-abrir:focus-visible { outline: 3px solid var(--sf-lime); outline-offset: 2px; }
+/* setas: uma de cada lado da capa do centro, sobre a janela (nada de barra vazia no alto); o anúncio para leitor de tela vai junto */
+.pastas-nav { position: absolute; left: var(--pad-x); right: var(--pad-x); top: calc(12px + var(--cw) * .33); height: 0; display: flex; align-items: center; justify-content: space-between; pointer-events: none; z-index: 20; }
+#projetos { padding-bottom: clamp(36px, 4vw, 64px); }
+.pastas-seta { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; padding: 0; border: 2px solid rgba(255, 255, 255, .5); border-radius: 50%; background: rgba(4, 43, 32, .55); color: #fff; cursor: pointer; backdrop-filter: blur(4px); transition: border-color .3s ease, color .3s ease, transform .3s var(--ease); }
 .pastas-seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .pastas-seta:hover { border-color: var(--sf-lime); color: var(--sf-lime); }
 .pastas-seta:active { transform: scale(.94); }
-@media (max-width: 760px) { .pastas.is-slider { --cw: 78vw; } }
+/* telas pequenas: capas um pouco menores, setas de 44 px nas faixas laterais (as vizinhas), sem cobrir a capa do centro */
+@media (max-width: 760px) { .pastas-janela { --cw: 72vw; } .pastas-nav { left: max(4px, calc(50% - var(--cw) / 2 - 46px)); right: max(4px, calc(50% - var(--cw) / 2 - 46px)); }
+  @media (max-width: 480px) { .pastas-janela { --cw: 68vw; } }
+  @media (max-width: 360px) { .pastas-janela { --cw: 64vw; } } /* em 320 px as setas de 44 px precisam de 50 px de cada lado */ .pastas-seta { width: 44px; height: 44px; } .pastas-seta svg { width: 20px; height: 20px; } }
 @media print { .pastas.is-slider { display: grid; height: auto !important; } .pastas.is-slider > .pasta { position: static; width: auto; margin: 0; transform: none !important; filter: none !important; opacity: 1 !important; } .pastas.is-slider .pasta-info { opacity: 1; transform: none; } .pastas-nav { display: none; } }

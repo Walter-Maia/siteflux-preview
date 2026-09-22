@@ -75,24 +75,25 @@
       '<div class="galeria-in">' +
         '<div class="galeria-topo"><p class="galeria-tipo"></p><button class="galeria-fechar" type="button">Fechar' + ICON_X + '</button></div>' +
         '<h3 class="galeria-titulo" id="galeria-titulo"></h3>' +
-        '<div class="galeria-anel" aria-hidden="true"><div class="ga-palco"><div class="ga-giro"></div></div><i class="ga-regua"></i></div>' +
+        /* 2.29 (pedido do Walter): tela principal centrada → anel giratório embaixo, com uma seta de cada lado → descrição.
+           Sem a fila de miniaturas nem o contador numérico; a legenda curta da tela fica sob a moldura. */
         '<div class="galeria-palco"><div class="galeria-moldura"><div class="galeria-barra" aria-hidden="true"><i></i><i></i><i></i></div>' +
           '<div class="galeria-tela"><img alt="" decoding="async" /><img alt="" decoding="async" />' +
-          '<p class="galeria-aviso" hidden><b>Esta tela não carregou.</b><span>Escolha outra nas miniaturas abaixo.</span></p></div></div>' +
-          '<p class="galeria-conta" aria-live="polite"><b></b><span></span></p>' +
-          '<div class="galeria-nav"><button class="galeria-seta" type="button" data-dir="-1" aria-label="Tela anterior">' + ICON_PREV + '</button>' +
-          '<ul class="galeria-minis" aria-label="Telas do projeto"></ul>' +
+          '<p class="galeria-aviso" hidden><b>Esta tela não carregou.</b><span>Use as setas para ver outra tela.</span></p></div></div>' +
+          '<p class="galeria-conta" aria-live="polite"><i class="sr-only"></i><span></span></p></div>' +
+        '<div class="galeria-nav"><button class="galeria-seta" type="button" data-dir="-1" aria-label="Tela anterior">' + ICON_PREV + '</button>' +
+          '<div class="galeria-anel" aria-hidden="true"><div class="ga-palco"><div class="ga-giro"></div></div><i class="ga-regua"></i></div>' +
           '<button class="galeria-seta" type="button" data-dir="1" aria-label="Próxima tela">' + ICON_NEXT + '</button>' +
-          '<button class="galeria-ampliar" type="button" aria-pressed="false">Ampliar tela</button></div></div>' +
+          '<button class="galeria-ampliar" type="button" aria-pressed="false">Ampliar tela</button></div>' +
         '<p class="galeria-desc"></p>' +
       '</div>';
     document.body.appendChild(d);
     var g = {
       el: d, tipo: d.querySelector('.galeria-tipo'), titulo: d.querySelector('.galeria-titulo'), desc: d.querySelector('.galeria-desc'),
-      num: d.querySelector('.galeria-conta b'), legenda: d.querySelector('.galeria-conta span'), minis: d.querySelector('.galeria-minis'),
+      legenda: d.querySelector('.galeria-conta span'), posicao: d.querySelector('.galeria-conta .sr-only'), // "Tela 2 de 5" só para leitores de tela
       layers: d.querySelectorAll('.galeria-tela img'), palco: d.querySelector('.galeria-palco'), tela: d.querySelector('.galeria-tela'),
       aviso: d.querySelector('.galeria-aviso'), ampliar: d.querySelector('.galeria-ampliar'),
-      slides: [], buttons: [], index: -1, shown: -1, front: 0, token: 0, opener: null,
+      slides: [], index: -1, shown: -1, front: 0, token: 0, opener: null,
       anel: { box: d.querySelector('.galeria-anel'), palco: d.querySelector('.ga-palco'), giro: d.querySelector('.ga-giro'), regua: d.querySelector('.ga-regua'), paineis: [], n: 0, R: 0, ang: 0, alvo: 0, raf: 0, drag: null }
     };
     ringBind(g);
@@ -254,8 +255,6 @@
     window.addEventListener('resize', function () { if (g.el.open) { ringMeasure(g); } });
   }
 
-  function pad2(n) { return ('0' + n).slice(-2); }
-
   function go(i) {
     var g = gal, n = g.slides.length;
     if (!n) { return; }
@@ -264,7 +263,6 @@
     g.index = i; // o pedido; g.shown é o que está na tela
     ringTo(g, i); // o anel gira na hora para a tela pedida
     var slide = g.slides[i], token = ++g.token;
-    g.buttons.forEach(function (b, k) { b.classList.toggle('is-loading', k === i && k !== g.shown); });
     var loader = new Image();
     loader.onload = function () {
       var show = function () {
@@ -275,10 +273,9 @@
         g.layers[g.front].classList.remove('is-on'); g.layers[g.front].alt = '';
         back.classList.add('is-on');
         g.front = 1 - g.front;
-        // só agora miniatura, contador e legenda passam a falar desta tela
+        // só agora a legenda passa a falar desta tela
         g.shown = i; g.aviso.hidden = true;
-        g.buttons.forEach(function (b, k) { b.setAttribute('aria-pressed', String(k === i)); b.classList.remove('is-loading'); });
-        g.num.textContent = pad2(i + 1) + ' / ' + pad2(n);
+        g.posicao.textContent = 'Tela ' + (i + 1) + ' de ' + n + ': ';
         g.legenda.textContent = slide.label;
       };
       // decode() evita o engasgo na troca, mas pode demorar a resolver sem quadros novos na tela: não seguramos a tela por ele
@@ -287,15 +284,20 @@
     };
     loader.onerror = function () {
       if (token !== g.token) { return; }
-      g.buttons[i].classList.add('is-erro'); g.buttons[i].classList.remove('is-loading');
-      if (g.shown < 0) { // nem a primeira carregou: aviso útil, miniaturas e Fechar continuam
-        g.aviso.hidden = false; g.num.textContent = '— / ' + pad2(n); g.legenda.textContent = 'Tela indisponível';
+      if (g.shown < 0) { // nem a primeira carregou: aviso útil; setas, anel e Fechar continuam
+        g.aviso.hidden = false; g.legenda.textContent = 'Tela indisponível';
       }
       g.index = g.shown; // setas e teclado continuam a partir da tela que está visível
     };
     loader.srcset = slide.srcset; loader.sizes = SIZES; loader.src = slide.src;
     var nextSlide = g.slides[(i + 1) % n]; // pré-carrega só a próxima
     if (nextSlide && n > 1) { var pre = new Image(); pre.srcset = nextSlide.srcset; pre.sizes = SIZES; pre.src = nextSlide.src; }
+  }
+
+  // nome oficial do projeto (o h3 pode conter o botão "Abrir galeria de …", cujo prefixo é só para leitores de tela)
+  function nomeDoProjeto(li) {
+    var h3 = li.querySelector('h3');
+    return h3 ? (h3.getAttribute('data-nome') || h3.textContent.replace(/\s+/g, ' ').trim()) : '';
   }
 
   function openGallery(li, opener) {
@@ -305,7 +307,7 @@
       var v = cs.getPropertyValue('--p-' + k).trim();
       if (v) { g.el.style.setProperty('--g-' + k, v); } else { g.el.style.removeProperty('--g-' + k); }
     });
-    g.titulo.textContent = li.querySelector('h3').textContent;
+    g.titulo.textContent = nomeDoProjeto(li);
     g.tipo.textContent = li.querySelector('.pasta-rotulo').textContent;
     var desc = li.querySelector('.pasta-descricao');
     g.desc.textContent = desc ? desc.textContent : '';
@@ -313,21 +315,9 @@
       var im = fig.querySelector('img'), cap = fig.querySelector('figcaption');
       return { src: im.getAttribute('src'), srcset: im.getAttribute('srcset') || '', alt: im.getAttribute('alt') || '', label: cap ? cap.textContent : '' };
     });
-    g.minis.textContent = ''; g.buttons = [];
-    g.slides.forEach(function (sl, k) {
-      var item = document.createElement('li'), btn = document.createElement('button'), im = document.createElement('img');
-      btn.type = 'button'; btn.className = 'galeria-mini';
-      btn.setAttribute('aria-pressed', 'false');
-      btn.setAttribute('aria-label', 'Tela ' + (k + 1) + ': ' + sl.label);
-      im.alt = ''; im.width = 600; im.height = 375; im.decoding = 'async';
-      im.src = (sl.srcset.split(',')[0] || sl.src).trim().split(' ')[0]; // o arquivo de 600 px serve de miniatura
-      btn.appendChild(im); item.appendChild(btn); g.minis.appendChild(item);
-      btn.addEventListener('click', function () { go(k); });
-      g.buttons.push(btn);
-    });
     Array.prototype.forEach.call(g.layers, function (layer) { layer.className = ''; layer.removeAttribute('srcset'); layer.removeAttribute('src'); layer.alt = ''; });
     g.index = -1; g.shown = -1; g.front = 0; g.token++; g.opener = opener || null;
-    g.aviso.hidden = true; g.num.textContent = ''; g.legenda.textContent = ''; setZoom(false);
+    g.aviso.hidden = true; g.legenda.textContent = ''; g.posicao.textContent = ''; setZoom(false);
     document.documentElement.classList.add('galeria-aberta');
     g.el.showModal();
     g.el.scrollTop = 0;
@@ -344,13 +334,28 @@
   }
 
   var canDialog = typeof window.HTMLDialogElement === 'function' && typeof window.HTMLDialogElement.prototype.showModal === 'function';
+  if (canDialog) { document.documentElement.classList.add('tem-dialog'); }
   Array.prototype.forEach.call(document.querySelectorAll('.pasta'), function (li) {
     var summary = li.querySelector('.pasta-detalhes summary');
     if (!canDialog || !summary || !li.querySelector('.pasta-previa')) { return; } // sem <dialog>: fica o <details> nativo
     summary.setAttribute('aria-haspopup', 'dialog');
     summary.addEventListener('click', function (e) { e.preventDefault(); openGallery(li, summary); });
-    var pilha = li.querySelector('.pasta-pilha'); // clique/toque na pasta em si: atalho de ponteiro para a mesma ação
-    if (pilha) { pilha.addEventListener('click', function () { openGallery(li, summary); }); }
+    // 2.29: no card só aparece o nome do projeto, e o nome é o acionador (botão real: Enter/Espaço, foco visível,
+    // nome acessível "Abrir galeria de …"). O <details> continua no HTML como fonte das telas e como fallback sem JS.
+    var h3 = li.querySelector('.pasta-titulo h3'), abrir = null;
+    if (h3) {
+      abrir = document.createElement('button');
+      abrir.type = 'button'; abrir.className = 'pasta-abrir';
+      abrir.setAttribute('aria-haspopup', 'dialog');
+      var nome = h3.textContent.replace(/\s+/g, ' ').trim();
+      h3.setAttribute('data-nome', nome);
+      abrir.appendChild(el('span', 'sr-only', 'Abrir galeria de '));
+      abrir.appendChild(document.createTextNode(nome));
+      h3.textContent = ''; h3.appendChild(abrir);
+      abrir.addEventListener('click', function () { openGallery(li, abrir); });
+    }
+    var pilha = li.querySelector('.pasta-pilha'); // clique/toque na capa em si: atalho de ponteiro para a mesma ação
+    if (pilha) { pilha.addEventListener('click', function () { openGallery(li, abrir || summary); }); }
   });
 
   /* ------------------------------------------------------------------
@@ -371,22 +376,16 @@
     lista.classList.add('is-slider');
     // a entrada por seção esconderia as capas que começam fora da janela (o observador nunca as "vê")
     itens.forEach(function (li) { li.removeAttribute('data-reveal'); li.classList.remove('reveal-pending'); });
+    // 2.29 (pedido do Walter): sem contador nem bolinhas; só as duas setas, uma de cada lado da capa do centro (sobre a janela),
+    // e o anúncio discreto para leitor de tela
     var nav = document.createElement('div');
     nav.className = 'pastas-nav';
-    nav.innerHTML = '<span class="pastas-conta" aria-hidden="true"></span><span class="pastas-pontos"></span>' +
-      '<span class="pastas-setas"><button class="pastas-seta" type="button" data-dir="-1" aria-label="Projeto anterior">' + ICON_PREV + '</button>' +
-      '<button class="pastas-seta" type="button" data-dir="1" aria-label="Próximo projeto">' + ICON_NEXT + '</button></span>' +
+    nav.innerHTML = '<button class="pastas-seta" type="button" data-dir="-1" aria-label="Projeto anterior">' + ICON_PREV + '</button>' +
+      '<button class="pastas-seta" type="button" data-dir="1" aria-label="Próximo projeto">' + ICON_NEXT + '</button>' +
       '<span class="sr-only" aria-live="polite"></span>';
-    janela.parentNode.insertBefore(nav, janela); // no alto: fica visível antes das capas
-    var conta = nav.querySelector('.pastas-conta'), pontos = nav.querySelector('.pastas-pontos'), status = nav.querySelector('[aria-live]');
+    janela.appendChild(nav);
+    var status = nav.querySelector('[aria-live]');
     var n = itens.length, atual = 0, drag = null, engolir = false, antes = [];
-    itens.forEach(function (li, i) {
-      var b = document.createElement('button'), h = li.querySelector('h3');
-      b.type = 'button'; b.className = 'pastas-ponto';
-      b.setAttribute('aria-label', 'Ir para o projeto ' + (i + 1) + ' de ' + n + (h ? ': ' + h.textContent : ''));
-      b.addEventListener('click', function () { ir(i, true); });
-      pontos.appendChild(b);
-    });
     function desloc(i, pos) { var o = (((i - pos) % n) + n) % n; if (o > n / 2) { o -= n; } return o; }
     function coloca(pos) { // pos pode ser fracionário durante o arraste
       itens.forEach(function (li, i) {
@@ -411,13 +410,11 @@
         li.classList.toggle('is-atual', i === atual);
         if (i === atual) { li.removeAttribute('inert'); } else { li.setAttribute('inert', ''); }
       });
-      Array.prototype.forEach.call(pontos.children, function (b, i) { if (i === atual) { b.setAttribute('aria-current', 'true'); } else { b.removeAttribute('aria-current'); } });
-      conta.textContent = pad2(atual + 1) + ' / ' + pad2(n);
     }
     function ir(i, anunciar) {
       atual = ((i % n) + n) % n;
       pinta();
-      if (anunciar) { var h = itens[atual].querySelector('h3'); status.textContent = 'Projeto ' + (atual + 1) + ' de ' + n + (h ? ': ' + h.textContent : ''); }
+      if (anunciar) { var nome = nomeDoProjeto(itens[atual]); status.textContent = 'Projeto ' + (atual + 1) + ' de ' + n + (nome ? ': ' + nome : ''); }
     }
     Array.prototype.forEach.call(nav.querySelectorAll('.pastas-seta'), function (b) {
       b.addEventListener('click', function () { ir(atual + Number(b.getAttribute('data-dir')), true); });
@@ -428,6 +425,7 @@
     });
     janela.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) { return; }
+      if (e.target.closest && e.target.closest('.pastas-nav')) { return; } // as setas ficam sobre a janela: o clique nelas não é arraste nem "lado clicado"
       drag = { id: e.pointerId, x: e.clientX, y: e.clientY, on: false, dx: 0 };
     });
     janela.addEventListener('pointermove', function (e) {

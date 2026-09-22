@@ -295,6 +295,9 @@ main { max-width: var(--sf-max); margin: 0 auto; }
 .sec-head { max-width: 760px; margin-bottom: clamp(40px, 5vw, 72px); }
 .sec-head .h2 { margin-top: 14px; }
 .sec-head .lead { margin-top: 18px; }
+/* título de "O que você recebe": um pouco maior que os outros .h2 (pedido do Walter), com linha mais justa e quebra equilibrada */
+#recursos .sec-head { max-width: 880px; }
+#recursos-title { font-size: clamp(32px, 5.2vw, 68px); line-height: 1.02; letter-spacing: -.03em; }
 .deco-mark { position: absolute; fill: none; stroke-width: 1.5; pointer-events: none; }
 
 /* ---------- Hero ---------- */
@@ -313,14 +316,14 @@ main { max-width: var(--sf-max); margin: 0 auto; }
 .hero .lead { margin-top: clamp(22px, 2.4vw, 34px); max-width: 50ch; }
 .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: clamp(28px, 3vw, 44px); }
 
-.hero-art { position: relative; width: 100%; max-width: 620px; margin-left: auto; aspect-ratio: 1; }
+.hero-art { position: relative; width: 100%; max-width: 620px; margin-left: auto; aspect-ratio: 1; container-type: inline-size; } /* container: a etiqueta "Publica" mede o próprio respiro em cqw */
 .hero-art svg { width: 100%; height: 100%; overflow: visible; }
 /* símbolo → site: o JS (bloco “Hero: o símbolo se transforma num site”) desenha os contornos em .morph;
    sem JS fica o símbolo oficial parado. Monocromático em lima, mesma espessura em tudo. */
 .hero-art .globe, .hero-art .morph path { fill: none; stroke: var(--sf-lime); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .hero-art.is-morph .globe { display: none; }
-.hero-art.is-morph .hero-chip { opacity: 0; transform: translate(-50%, -50%) scale(.7); transition: opacity .3s ease, transform .55s cubic-bezier(.34, 1.56, .64, 1); }
-.hero-art.is-morph.is-site .hero-chip { opacity: 1; transform: translate(-50%, -50%); }
+.hero-art.is-morph .hero-chip { opacity: 0; transform: translate(var(--tx), -50%) scale(.7); transition: opacity .3s ease, transform .55s cubic-bezier(.34, 1.56, .64, 1); }
+.hero-art.is-morph.is-site .hero-chip { opacity: 1; transform: translate(var(--tx), -50%); }
 .hero-art.is-site .hero-chip--2 { transition-delay: .12s; }
 .hero-art.is-site .hero-chip--3 { transition-delay: .24s; }
 .hero-chip {
@@ -331,9 +334,11 @@ main { max-width: var(--sf-max); margin: 0 auto; }
 }
 .hero-chip svg { width: 32px; height: 32px; flex: none; }
 /* chips ancorados pelo CENTRO sobre a borda da janela: canto de cima, lateral direita e base */
-.hero-chip { transform: translate(-50%, -50%); }
+.hero-chip { --tx: -50%; transform: translate(var(--tx), -50%); }
 .hero-chip--1 { left: 17%; top: 15.8%; background: var(--sf-lime); color: var(--sf-dark); }
-.hero-chip--2 { left: 89%; top: 47%; background: var(--sf-blue); color: var(--sf-dark); }
+/* "Publica" fica sobre a lateral direita (centro a 89 % da arte), mas o que passa da arte é limitado ao respiro real do bloco
+   (padding lateral − 16 px): a etiqueta inteira, ícone e texto, continua enquadrada em qualquer largura, inclusive na entrada com mola */
+.hero-chip--2 { left: auto; right: 11%; top: 47%; --tx: min(50%, calc(11cqw + var(--pad-x) - 16px)); background: var(--sf-blue); color: var(--sf-dark); }
 .hero-chip--3 { left: 40%; top: 80.4%; background: #fff; color: var(--sf-dark); }
 .hero-chip svg { fill: var(--sf-dark); }
 
@@ -900,17 +905,18 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 }
 .plan-inner > :not(header) { margin-inline: calc(var(--pad) - 8px); }
 /* capa */
-.plan header { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; padding: 16px calc(var(--pad) - 8px) 20px; border-radius: 20px; background: var(--cap); }
+/* 2.29: cartões mais compactos (−10–15 % de altura) só pelos espaços internos — fontes, benefícios e botões continuam iguais */
+.plan header { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; padding: 14px calc(var(--pad) - 8px) 16px; border-radius: 20px; background: var(--cap); }
 .plan-num { display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; border-radius: 999px; background: var(--sf-dark); color: var(--sf-lime); font-size: 12px; font-weight: 700; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
 .plan--focus .plan-num { background: var(--sf-lime); color: var(--sf-dark); }
 .plan-mark { position: absolute; right: -58px; top: -62px; width: min(78%, 252px); fill: var(--sf-dark); opacity: .09; pointer-events: none; transition: transform .9s var(--ease); }
 .plan--focus .plan-mark { fill: var(--sf-lime); opacity: .2; }
-.plan h3 { position: relative; margin-top: clamp(30px, 14cqi, 46px); font-size: clamp(24px, 9.4cqi, 31px); font-weight: 700; line-height: 1.1; letter-spacing: -.015em; }
+.plan h3 { position: relative; margin-top: clamp(22px, 10cqi, 32px); font-size: clamp(24px, 9.4cqi, 31px); font-weight: 700; line-height: 1.1; letter-spacing: -.015em; }
 .plan-tag { position: relative; margin-top: 6px; font-size: 14.5px; font-weight: 600; color: var(--soft); }
 .plan--focus .plan-tag { color: var(--sf-lime); }
 .plan--custom .plan-tag { color: var(--sf-dark); }
 /* preço: "R$" no alto, número grande, "/mês" na linha de base; a altura é fixa para os quatro alinharem */
-.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; min-height: clamp(40px, 15.5cqi, 54px); margin-top: 26px; font-variant-numeric: tabular-nums; }
+.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; min-height: clamp(40px, 15.5cqi, 54px); margin-top: 18px; font-variant-numeric: tabular-nums; }
 .plan-cur { align-self: flex-start; margin-top: .25em; font-size: 15px; font-weight: 700; }
 .plan-price strong { font-size: clamp(40px, 15.5cqi, 54px); font-weight: 700; line-height: 1; letter-spacing: -.035em; }
 .plan-price--texto { align-items: flex-end; }
@@ -918,8 +924,8 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .plan--focus .plan-price strong { color: var(--sf-lime); }
 .plan-per { font-size: 15px; font-weight: 600; color: var(--soft); }
 /* lista: linhas pontilhadas entre os itens, seta oficial como marcador */
-.plan-list { display: grid; align-content: start; flex: 1; margin-top: 24px; margin-bottom: 26px; }
-.plan-list li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; align-items: start; padding: 11px 0; border-top: 2px dotted var(--rule); font-size: 14.5px; line-height: 1.4; font-weight: 500; overflow-wrap: anywhere; text-wrap: balance; }
+.plan-list { display: grid; align-content: start; flex: 1; margin-top: 16px; margin-bottom: 18px; }
+.plan-list li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; align-items: start; padding: 8px 0; border-top: 2px dotted var(--rule); font-size: 14.5px; line-height: 1.4; font-weight: 500; overflow-wrap: anywhere; text-wrap: balance; }
 .plan-list li:last-child { border-bottom: 2px dotted var(--rule); }
 .plan-list svg { width: 20px; height: 20px; fill: var(--sf-dark); }
 .plan--focus .plan-list svg { fill: var(--sf-lime); }
@@ -932,11 +938,11 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 @media (min-width: 1181px) {
   .plans { padding-block: 14px; }
   .plan--focus .plan-inner { margin-block: -14px; padding-bottom: calc(var(--pad) + 14px); }
-  .plan--focus header { padding-top: 30px; }
+  .plan--focus header { padding-top: 24px; }
 }
 @media (max-width: 1180px) { .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 1000px) { .plans-head { grid-template-columns: 1fr; align-items: start; } }
-@media (max-width: 640px) { .plans { grid-template-columns: 1fr; gap: 20px; } .plan h3 { margin-top: 26px; } }
+@media (max-width: 640px) { .plans { grid-template-columns: 1fr; gap: 20px; } .plan h3 { margin-top: 20px; } }
 .plan-invite {
   --r: var(--radius-lg);
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 40px;
