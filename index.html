@@ -16,12 +16,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="preload" href="assets/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="assets/css/siteflux.css?v=2.29.0" />
-<link rel="stylesheet" href="assets/css/siteflux-personalidade.css?v=2.29.0" />
+<link rel="stylesheet" href="assets/css/siteflux.css?v=2.31.0" />
+<link rel="stylesheet" href="assets/css/siteflux-personalidade.css?v=2.31.0" />
 <!-- Intro: só marca a página quando a abertura vai mesmo rodar (1x por sessão, sem hash, sem movimento reduzido, aba visível) -->
 <script>(function(){try{if(sessionStorage.getItem("sf-intro")||location.hash||document.hidden||matchMedia("(prefers-reduced-motion: reduce)").matches)return;document.documentElement.classList.add("intro-active")}catch(e){}})();</script>
-<script src="assets/js/siteflux.js?v=2.29.0" defer></script>
-<script src="assets/js/siteflux-personalidade.js?v=2.29.0" defer></script>
+<script src="assets/js/siteflux.js?v=2.31.0" defer></script>
+<script src="assets/js/siteflux-personalidade.js?v=2.31.0" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -255,7 +255,7 @@
 
     <!-- ====================== O QUE VOCÊ RECEBE ====================== -->
     <!-- Tablet que se monta no scroll (base: seção 4 do protótipo — .s3-card-frame + balão).
-         Com JS (.is-story): o tablet nasce inclinado enquanto a seção sobe, prende na tela e o scroll
+         Com JS (.is-story): o aparelho assenta enquanto a seção sobe, prende na tela e o scroll
          passa a montar o wireframe bloco a bloco, rolar a tela por dentro e trocar o balão e a legenda.
          Sem JS ou com movimento reduzido: tablet parado com a página inteira e as seis frentes abaixo. -->
     <section class="band band--beige story" id="recursos" aria-labelledby="recursos-title" data-story>
@@ -286,12 +286,16 @@
                 </span>
               </div>
               <div class="device-view" aria-hidden="true">
+              <div class="device-frame">
+              <span class="device-bezel"></span>
+              <span class="device-paper"></span>
               <div class="device-screen">
                 <div class="device-track" data-track="landing">
                   <div class="wire-block site-nav">
                     <span class="site-logo"><svg viewBox="0 0 40 40" focusable="false"><circle class="draw" pathLength="1" cx="20" cy="20" r="17"/><path class="draw" pathLength="1" d="M11 26 20 10l9 16M15 20h10"/></svg><b class="rx">Sua marca</b></span>
                     <span class="site-links rx"><i>Início</i><i>Serviços</i><i>Projetos</i><i>Sobre</i></span>
                     <span class="site-cta pop">Fale conosco<svg viewBox="0 0 24 24" focusable="false"><path d="M6 12h12M13 7l5 5-5 5"/></svg></span>
+                    <span class="site-burger"><i></i><i></i><i></i></span>
                   </div>
                   <div class="wire-block site-hero">
                     <span class="site-hero-copy">
@@ -346,7 +350,6 @@
                     </span>
                   </div>
                   <div class="wire-block site-footer">
-                    <strong class="site-wordmark rx">Sua marca</strong>
                     <span class="site-contact">
                       <span class="site-social">
                         <svg viewBox="0 0 40 40" focusable="false"><path class="draw" pathLength="1" d="M10 8h20a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2zM25.5 20a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
@@ -411,7 +414,6 @@
                     </span>
                   </div>
                   <div class="wire-block site-footer">
-                    <strong class="site-wordmark rx">Sua marca</strong>
                     <span class="site-contact"><span class="site-social"><svg viewBox="0 0 40 40" focusable="false"><path class="draw" pathLength="1" d="M10 8h20a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2zM25.5 20a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg><svg viewBox="0 0 40 40" focusable="false"><path class="draw" pathLength="1" d="M20 34s11-9.5 11-17a11 11 0 0 0-22 0c0 7.5 11 17 11 17zM24 17a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"/></svg><svg viewBox="0 0 40 40" focusable="false"><path class="draw" pathLength="1" d="M7 11h26v18H7zM7 12l13 10 13-10"/></svg></span><span class="site-cta pop">WhatsApp<svg viewBox="0 0 24 24" focusable="false"><path d="M6 12h12M13 7l5 5-5 5"/></svg></span></span>
                   </div>
                 </div>
@@ -462,10 +464,10 @@
                     </span>
                   </div>
                   <div class="wire-block site-footer">
-                    <strong class="site-wordmark rx">Sua marca</strong>
                     <span class="site-contact"><span class="site-social"><svg viewBox="0 0 40 40" focusable="false"><path class="draw" pathLength="1" d="M10 8h20a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2zM25.5 20a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg><svg viewBox="0 0 40 40" focusable="false"><path class="draw" pathLength="1" d="M20 34s11-9.5 11-17a11 11 0 0 0-22 0c0 7.5 11 17 11 17zM24 17a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"/></svg><svg viewBox="0 0 40 40" focusable="false"><path class="draw" pathLength="1" d="M7 11h26v18H7zM7 12l13 10 13-10"/></svg></span><span class="site-cta pop">WhatsApp<svg viewBox="0 0 24 24" focusable="false"><path d="M6 12h12M13 7l5 5-5 5"/></svg></span></span>
                   </div>
                 </div>
+              </div>
               </div>
               </div>
               <span class="balloon balloon--1" aria-hidden="true"><svg viewBox="0 0 204.42 204.42" focusable="false"><use href="#sf-seta"></use></svg>Menu intuitivo</span>
@@ -610,9 +612,8 @@
 
     <!-- ======================== COMO FUNCIONA ======================== -->
     <section class="open editorial" id="como-funciona" aria-labelledby="como-title">
-      <!-- Os quatro passos entram um de cada vez conforme o scroll (mesmo motor do antigo painel): cada <li> tem data-fly
-           "x,y,giro,ordem" — de onde vem (em % da janela) e em que ordem entra. Quando cabe, a seção prende na tela enquanto
-           eles chegam e a linha se desenha junto. Sem JS ou com movimento reduzido: tudo parado, no lugar. -->
+      <!-- Progresso no scroll natural: pequenos deslocamentos, azul acumulado e uma linha que ganha estrutura.
+           Os textos permanecem legíveis. Sem JS ou com movimento reduzido, a composição já está assentada. -->
       <div class="bento-pin" data-bento>
         <div class="bento-stage">
           <div class="sec-head" data-reveal>
@@ -623,10 +624,12 @@
           <div class="steps-wrap" data-bento-grid>
             <svg class="steps-line" viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path pathLength="1" d="M0,6H100"/></svg>
             <ol class="steps">
-            <li class="step" data-fly="-62,0,-3,0"><span class="step-num" aria-hidden="true">01</span><h3>Briefing</h3><p class="muted">Entendemos o seu negócio, o seu público e o objetivo real do site.</p></li>
-            <li class="step" data-fly="0,70,2,1"><span class="step-num" aria-hidden="true">02</span><h3>Design e conteúdo</h3><p class="muted">Criamos o visual e os textos do site. Você acompanha e aprova antes de publicar.</p></li>
-            <li class="step" data-fly="0,70,-2,2"><span class="step-num" aria-hidden="true">03</span><h3>Publicação</h3><p class="muted">O site vai ao ar com domínio, hospedagem e SEO técnico configurados.</p></li>
-            <li class="step" data-fly="62,0,3,3"><span class="step-num" aria-hidden="true">04</span><h3>Evolução mensal</h3><p class="muted">Ajustes, melhorias e novos conteúdos, mês a mês.</p></li>
+            <li class="step" data-fly="0,20,0,0"><span class="step-num" aria-hidden="true">01</span><h3>Briefing</h3><p class="muted">Entendemos o seu negócio, o seu público e o objetivo real do site.</p></li>
+            <li class="step" data-fly="0,20,0,1"><span class="step-num" aria-hidden="true">02</span><h3>Design e conteúdo</h3><p class="muted">Criamos o visual e os textos do site. Você acompanha e aprova antes de publicar.</p></li>
+            <li class="step" data-fly="0,20,0,2"><span class="step-num" aria-hidden="true">03</span><h3>Publicação</h3><p class="muted">O site vai ao ar com domínio, hospedagem e SEO técnico configurados.</p></li>
+            <li class="step" data-fly="0,20,0,3"><span class="step-num" aria-hidden="true">04</span><h3>Evolução mensal</h3><p class="muted">Ajustes, melhorias e novos conteúdos, mês a mês.</p>
+              <svg class="step-structure" viewBox="0 0 112 44" aria-hidden="true" focusable="false"><path class="step-structure-head" d="M1 4h110"/><g class="step-structure-content"><path d="M1 17h46M1 28h46M61 17h50M61 28h34M1 40h110"/></g></svg>
+            </li>
             </ol>
           </div>
         </div>
@@ -634,7 +637,7 @@
     </section>
 
     <!-- =========================== PLANOS ===========================
-         Tabela oficial fornecida pelo cliente (5 planos). Para alterar, edite o
+         Tabela vigente: três planos mensais e um personalizado. Para alterar, edite o
          <li class="plan"> correspondente: nome, assinatura, preço, lista e a
          mensagem ?text= do botão (nome e preço precisam bater). -->
     <section class="open" id="planos" aria-labelledby="planos-title">

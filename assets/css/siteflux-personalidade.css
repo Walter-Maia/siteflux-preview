@@ -148,19 +148,23 @@ html.galeria-aberta { overflow: hidden; }
   font-family: inherit;
 }
 .galeria::backdrop { background: var(--g-bg, #063326); }
-.galeria[open] { animation: galeria-entra .38s var(--ease) both; }
-.galeria.is-closing { animation: galeria-sai .2s ease both; }
-@keyframes galeria-entra { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-@keyframes galeria-sai { to { opacity: 0; } }
+/* A capa e a moldura compartilham a transição; o diálogo continua sendo o destino semântico. */
+.galeria.is-morphing, .galeria.is-morphing::backdrop { background: transparent; }
+.galeria.is-morphing .galeria-moldura { opacity: 0; }
+.galeria.is-morphing .galeria-in { position: relative; z-index: 1; }
+.galeria-flight, .galeria-veil { position: fixed; pointer-events: none; transform-origin: 0 0; will-change: transform; }
+.galeria-flight { z-index: 3; overflow: hidden; }
+.galeria-flight-shot { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; }
+.galeria-veil { z-index: 0; inset: 0; background: var(--g-bg); }
 /* 2.29 (pedido do Walter): UMA coluna centrada — topo · nome · tela principal (+ legenda) · anel giratório com uma seta de
    cada lado · descrição. Sem a fila de miniaturas nem o contador. A tela principal tem a proporção das capturas e a largura
    vem da altura da janela, para o conjunto caber sem rolar quando há altura; em janela baixa o diálogo rola normalmente. */
 .galeria-in {
-  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "topo" "titulo" "palco" "nav" "desc";
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "topo" "titulo" "palco" "nav" "pos" "desc";
   justify-items: center; align-content: start; gap: 0;
-  box-sizing: border-box; min-height: 100%; padding: clamp(16px, 2.4vw, 36px) clamp(20px, 4vw, 64px) clamp(18px, 2.4vw, 36px);
+  box-sizing: border-box; min-height: 100%; padding: clamp(12px, 1.6vw, 22px) clamp(20px, 4vw, 64px) clamp(12px, 1.6vw, 22px); /* 2.30: respiros menores — a tela principal ganha a altura */
 }
-.galeria-topo { grid-area: topo; justify-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(12px, 1.6vw, 22px); }
+.galeria-topo { grid-area: topo; justify-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(8px, 1vw, 12px); }
 .galeria-tipo { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--g-mut); }
 .galeria-tipo::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--g-acc); }
 .galeria-fechar, .galeria-seta, .galeria-ampliar {
@@ -173,11 +177,12 @@ html.galeria-aberta { overflow: hidden; }
 .galeria-fechar svg, .galeria-seta svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .galeria-seta { padding: 0; width: 48px; }
 
-.galeria-titulo { font-family: var(--font-display); grid-area: titulo; min-width: 0; margin-bottom: clamp(12px, 1.6vw, 20px); font-size: clamp(26px, 3vw, 44px); font-weight: 600; line-height: 1.04; letter-spacing: -.02em; text-align: center; text-wrap: balance; overflow-wrap: anywhere; }
-.galeria-desc { grid-area: desc; margin-top: clamp(12px, 1.6vw, 20px); max-width: 60ch; font-size: clamp(15px, 1.05vw, 16.5px); line-height: 1.55; text-align: center; color: var(--g-mut); }
+.galeria-titulo { font-family: var(--font-display); grid-area: titulo; min-width: 0; margin-bottom: clamp(8px, 1vw, 12px); font-size: clamp(24px, 2.6vw, 40px); font-weight: 600; line-height: 1.04; letter-spacing: -.02em; text-align: center; text-wrap: balance; overflow-wrap: anywhere; }
+.galeria-desc { grid-area: desc; margin-top: clamp(8px, 1vw, 12px); max-width: 64ch; font-size: clamp(14px, 1vw, 15.5px); line-height: 1.5; text-align: center; color: var(--g-mut); }
 
-/* palco: tela + legenda, centrados; largura pela altura disponível (topo + nome + anel + descrição ≈ 520 px) */
-.galeria-palco { grid-area: palco; min-width: 0; display: grid; gap: 10px; width: min(100%, calc((100dvh - 480px) * 1.6), 960px); min-width: min(100%, 480px); touch-action: pan-y; } /* em janela baixa o diálogo rola um pouco; a tela não fica minúscula */
+/* palco: tela + legenda, centrados. 2.30: a largura é calculada pelo JS (ajusta) a partir da largura E da altura reais
+   disponíveis; este valor é só o ponto de partida antes da medição */
+.galeria-palco { grid-area: palco; min-width: 0; max-width: 100%; display: grid; gap: 10px; width: min(100%, 960px); touch-action: pan-y; }
 .galeria-moldura {
   border-radius: 14px; overflow: hidden; background: var(--g-soft);
   box-shadow: 0 0 0 1px var(--g-line), 0 18px 44px rgba(0, 0, 0, .24);
@@ -200,7 +205,22 @@ html.galeria-aberta { overflow: hidden; }
 .galeria-conta span { font-size: clamp(15px, 1.1vw, 18px); }
 
 /* anel com uma seta de cada lado; "Ampliar tela" (só até 899 px) numa linha própria embaixo */
-.galeria-nav { grid-area: nav; width: min(100%, 1100px); display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; grid-template-areas: "prev anel next" "amp amp amp"; align-items: center; gap: 8px 12px; margin-top: 4px; }
+.galeria-nav { grid-area: nav; width: min(100%, calc(var(--tela-w, 960px) + 140px)); display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; grid-template-areas: "prev anel next" "amp amp amp"; align-items: center; gap: 8px 12px; margin-top: 4px; } /* as setas ficam junto ao anel, na largura da tela + folga */
+/* 2.30: "2 de 5 telas" abaixo do anel, discreto e centrado (o total vem de cada projeto) */
+.galeria-pos { grid-area: pos; min-height: 20px; margin-top: 2px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--g-mut); font-variant-numeric: tabular-nums; text-align: center; }
+/* 2.30: encaixe por altura (classes escritas pelo JS): anel compacto e, se preciso, sem a descrição */
+.galeria.is-anel-compacto .galeria-anel { --ga-w: clamp(100px, 9vw, 140px); }
+.galeria.is-anel-compacto .ga-palco { height: calc(var(--ga-w) * .86 + 30px); }
+.galeria.is-sem-desc .galeria-desc { display: none; }
+/* paisagem curta (celular deitado, notebook com janela baixa): tela à esquerda; nome, anel, contador e descrição à direita */
+.galeria.is-paisagem .galeria-in { grid-template-columns: minmax(0, 1fr) minmax(220px, 40%); grid-template-areas: "topo topo" "palco titulo" "palco nav" "palco pos" "palco desc"; column-gap: clamp(16px, 3vw, 40px); align-content: center; align-items: center; }
+.galeria.is-paisagem .galeria-palco { grid-row: 2 / 6; align-self: center; justify-self: end; }
+.galeria.is-paisagem .galeria-titulo { align-self: end; font-size: clamp(20px, 2.6vw, 30px); margin-bottom: 8px; }
+.galeria.is-paisagem .galeria-nav { width: 100%; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px 8px; margin-top: 0; }
+.galeria.is-paisagem .galeria-anel { --ga-w: clamp(90px, 10vw, 150px); }
+.galeria.is-paisagem .ga-palco { height: calc(var(--ga-w) * .86 + 28px); }
+.galeria.is-paisagem .galeria-desc { align-self: start; margin-top: 8px; font-size: 14px; max-width: none; }
+.galeria.is-paisagem .galeria-topo { margin-bottom: 8px; }
 .galeria-seta[data-dir="-1"] { grid-area: prev; } .galeria-seta[data-dir="1"] { grid-area: next; }
 .galeria-ampliar { display: none; grid-area: amp; justify-self: center; }
 /* sem o anel (movimento reduzido, janela baixa, sem 3D): as setas ficam juntas, no centro */
@@ -214,18 +234,19 @@ html.galeria-aberta { overflow: hidden; }
   .galeria-barra { height: 22px; padding-inline: 12px; } .galeria-barra i { width: 7px; height: 7px; }
   .galeria-nav { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px 8px; }
   .galeria-seta { width: 44px; min-width: 44px; min-height: 44px; }
-  .galeria-ampliar { display: inline-flex; }
+  .galeria-ampliar { display: none; }
   .galeria-desc { margin-top: 16px; max-width: 52ch; }
   /* "Ampliar tela": a captura desktop fica pequena no celular; ampliada, rola dentro da moldura nos dois eixos e a troca por arrasto é suspensa */
   .galeria-tela.is-zoom { overflow: auto; touch-action: pan-x pan-y; overscroll-behavior: contain; }
   .galeria-tela.is-zoom img { display: none; }
   .galeria-tela.is-zoom img.is-on { display: block; position: static; width: 240%; height: auto; transform: none; transition: none; }
 }
-@media (max-height: 560px) and (min-width: 900px) { .galeria-desc { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .galeria[open], .galeria.is-closing { animation: none; }
   .galeria-tela img { transform: none; transition: none; }
 }
+/* "Ampliar tela" só onde faz sentido: tela estreita E toque (no notebook com janela estreita a linha extra só roubava altura) */
+@media (max-width: 899px) and (pointer: coarse) { .galeria-ampliar { display: inline-flex; } }
 /* com JS a pasta inteira abre a galeria (a ação acessível continua sendo o resumo "Explorar projeto") */
 html.js .pasta-pilha { cursor: pointer; }
 
@@ -245,7 +266,7 @@ html.js .pasta-pilha { cursor: pointer; }
   .galeria-anel { --ga-w: clamp(120px, 34vw, 200px); }
   .ga-palco { height: calc(var(--ga-w) * .86 + 36px); perspective: 820px; }
 }
-@media (max-height: 560px) and (min-width: 900px) { .galeria-anel { display: none; } .galeria-nav { grid-template-columns: 48px 32px 48px; justify-content: center; } }
+/* 2.30: em janela baixa o anel não some mais — encolhe (.is-anel-compacto / .is-paisagem, pelo JS); só com movimento reduzido ele sai */
 @media (prefers-reduced-motion: reduce) { .galeria-anel { display: none; } .galeria-nav { grid-template-columns: 48px 32px 48px; justify-content: center; } }
 
 /* ---------- 5. Projetos em carrossel de capas (o JS monta a janela, posiciona as capas e cria os controles) ----------

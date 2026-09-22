@@ -400,12 +400,18 @@
     if (!viewport || n < 3) return;
 
     var STEP_DEG = 24, SHRINK = 0.7, DRIFT = 0.13; // DRIFT: peças por segundo (≈ 0,0022 por quadro no protótipo)
+    var REST_MS = 4000; // depois de uma interação, tempo de leitura antes de o deslize voltar
     var still = reduceMotion.matches;
     var pos = 0, phase = 0, last = 0, raf = 0;
-    var hover = false, inView = !('IntersectionObserver' in window);
+    var hover = false, focus = false, inView = !('IntersectionObserver' in window);
     var boxW = 0, stageW = 0, stageH = 0, radiusX = 0, radiusY = 0;
+    // 2.30 (pedido do Walter): arraste (mouse/toque), clique/toque para centralizar e assentamento. Um único estado contínuo
+    // `pos`; `alvo` é para onde ele desliza (snap/centralizar); `drag` é o gesto em curso; `descanso` segura o deslize automático.
+    var drag = null, alvo = null, descanso = 0, engolir = false;
 
     function mod(v) { return ((v % n) + n) % n; }
+    function maisCurto(i) { var d = mod(i - pos); if (d > n / 2) d -= n; return pos + d; } // caminho circular mais curto até a peça i
+    function pxPorPeca() { return Math.max(40, Math.sin(STEP_DEG * Math.PI / 180) * radiusX); } // deslocamento horizontal de uma peça vizinha
 
     function measure() {
       boxW = box.clientWidth; stageW = stage.offsetWidth; stageH = stage.offsetHeight;
@@ -443,20 +449,34 @@
       }
     }
 
-    function canRun() { return !still && inView && !document.hidden; }
+    function canRun() { return inView && !document.hidden && (!still || alvo !== null); } // com movimento reduzido só anima o assentamento
     function tick(now) {
       raf = 0;
       if (!canRun()) return;
       var dt = Math.min(0.05, (now - (last || now)) / 1000);
       last = now;
-      if (!hover) { pos += DRIFT * dt; phase += 1.08 * dt; }
+      if (alvo !== null && !drag) {
+        // desliza até o alvo (peça clicada ou a mais próxima ao soltar) e para; com movimento reduzido chega de uma vez
+        var falta = alvo - pos;
+        if (still || Math.abs(falta) < 0.002) { pos = alvo; alvo = null; descanso = now + REST_MS; }
+        else pos += falta * Math.min(1, 7 * dt);
+      } else if (!still && !drag && !hover && !focus && now >= descanso) { pos += DRIFT * dt; phase += 1.08 * dt; }
       render();
-      raf = requestAnimationFrame(tick);
+      if (!still || alvo !== null) raf = requestAnimationFrame(tick);
     }
     function wake() { if (!raf && canRun()) { last = 0; raf = requestAnimationFrame(tick); } }
+    function irPara(i) { alvo = maisCurto(i); descanso = performance.now() + REST_MS; wake(); }
 
-    // as peças giram para o centro: lazy deixaria cartas em branco
-    cards.forEach(function (li) { var im = li.querySelector('img'); if (im) im.loading = 'eager'; });
+    // as peças giram para o centro: lazy deixaria cartas em branco. Cada peça vira um botão (Enter/Espaço = clique) que a centraliza.
+    cards.forEach(function (li, i) {
+      var im = li.querySelector('img'); if (im) im.loading = 'eager';
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'card-btn';
+      btn.setAttribute('aria-label', 'Centralizar peça ' + (i + 1) + ' de ' + n + (im && im.alt ? ': ' + im.alt : '')); // um nome só: ação + descrição da peça (o alt não se perde)
+      while (li.firstChild) btn.appendChild(li.firstChild);
+      li.appendChild(btn);
+      btn.addEventListener('click', function (e) { if (engolir) { e.preventDefault(); return; } irPara(i); });
+    });
     box.classList.add('is-live');
     measure();
 
@@ -468,9 +488,47 @@
       hover = !!li && stage.contains(li);
     }, { passive: true });
     document.documentElement.addEventListener('pointerleave', function () { hover = false; });
-    window.addEventListener('blur', function () { hover = false; });
+    window.addEventListener('blur', function () { hover = false; fimDoGesto(null); });
     window.addEventListener('scroll', function () { hover = false; }, { passive: true }); // ao rolar, a peça sai de baixo do mouse sem gerar pointermove
     box.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    box.addEventListener('focusin', function () { try { focus = !!box.querySelector(':focus-visible'); } catch (err) { focus = true; } }); // só o foco por teclado pausa; o clique do mouse também foca, mas o deslize volta depois do descanso
+    box.addEventListener('focusout', function (e) { if (!box.contains(e.relatedTarget)) { focus = false; descanso = Math.max(descanso, performance.now() + 800); wake(); } });
+
+    // arraste: mouse (botão primário) ou toque; só vira gesto quando o movimento é claramente horizontal (o vertical continua
+    // sendo a rolagem da página, touch-action: pan-y). Ponteiros secundários são ignorados. Ao soltar, assenta a peça mais próxima.
+    function fimDoGesto(e) {
+      var d = drag;
+      if (!d || (e && e.pointerId !== d.id)) return;
+      drag = null;
+      viewport.classList.remove('is-dragging');
+      try { viewport.releasePointerCapture(d.id); } catch (err) { /* já solto */ }
+      if (d.on) { engolir = true; setTimeout(function () { engolir = false; }, 80); alvo = Math.round(pos); descanso = performance.now() + REST_MS; }
+      wake();
+    }
+    viewport.addEventListener('pointerdown', function (e) {
+      if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0) || drag) return;
+      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, from: pos, on: false };
+    });
+    viewport.addEventListener('pointermove', function (e) {
+      var d = drag;
+      if (!d || e.pointerId !== d.id) return;
+      var dx = e.clientX - d.x, dy = e.clientY - d.y;
+      if (!d.on) {
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return; // gesto vertical: rolagem; nada muda
+        d.on = true; alvo = null; viewport.classList.add('is-dragging');
+        // mouse: captura para seguir o arraste fora da janela. Toque já tem captura implícita — pedir de novo dispara
+        // lostpointercapture no meio do gesto (visto no QA) e interromperia o swipe
+        if (e.pointerType === 'mouse') { try { viewport.setPointerCapture(d.id); } catch (err) { /* sem captura: o pointerup no documento encerra */ } }
+      }
+      pos = d.from - dx / pxPorPeca();
+      render();
+    });
+    viewport.addEventListener('pointerup', fimDoGesto);
+    viewport.addEventListener('pointercancel', fimDoGesto);
+    // soltou fora da janela (sem captura) ou o navegador engoliu o pointerup: qualquer fim do ponteiro primário encerra o gesto
+    document.addEventListener('pointerup', function (e) { if (drag && e.isPrimary) fimDoGesto(null); }, true);
+    document.addEventListener('pointercancel', function (e) { if (drag && e.isPrimary) fimDoGesto(null); }, true);
+    box._fan = function () { return { pos: pos, drag: !!drag, on: !!(drag && drag.on), alvo: alvo, descansoEm: Math.round(descanso - performance.now()), hover: hover, focus: focus, raf: !!raf, still: still, inView: inView }; }; // sonda de QA (somente leitura)
 
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (en) { inView = en[0].isIntersecting; wake(); }, { threshold: 0 }).observe(box);
@@ -479,7 +537,7 @@
     if ('ResizeObserver' in window) new ResizeObserver(measure).observe(stage);
     window.addEventListener('resize', measure);
     window.addEventListener('load', measure);
-    var onMotionPref = function () { still = reduceMotion.matches; render(); wake(); };
+    var onMotionPref = function () { still = reduceMotion.matches; if (still && alvo === null) pos = Math.round(pos); render(); wake(); };
     if (reduceMotion.addEventListener) reduceMotion.addEventListener('change', onMotionPref);
     else if (reduceMotion.addListener) reduceMotion.addListener(onMotionPref);
     wake();
@@ -487,11 +545,12 @@
 
   /* ---------- Tablet que se monta no scroll (#recursos) ----------
      Base: updateScrollCard() da seção 4 de siteflux-prototipo.html. Tudo é função direta do pixel
-     de scroll (sem transição no que o scroll move): 1) enquanto a seção sobe, o tablet nasce
-     inclinado e assenta; 2) preso na tela, cada trecho do scroll monta um bloco do site ilustrado,
+     de scroll (sem transição no que o scroll move): 1) enquanto a seção sobe, o aparelho assenta
+     com um deslocamento curto; 2) preso na tela, cada trecho do scroll monta um bloco do site ilustrado,
      rola a tela por dentro e troca o balão e a legenda (data-step). Os botões da barra trocam o
      tipo de site (landing · e-commerce · institucional) e a visualização (computador · celular);
-     o progresso do scroll vale para qualquer combinação. Fica parado com movimento reduzido ou
+     o frame inteiro muda de proporção e mantém o mesmo progresso. A viewport desktop conserva
+     sua largura lógica mesmo em celulares. Fica parado com movimento reduzido ou
      quando a janela é baixa demais para caber o tablet. */
   (function story() {
     var sec = document.querySelector('[data-story]');
@@ -499,13 +558,20 @@
     var pin = sec.querySelector('.story-pin');
     var stage = sec.querySelector('.story-stage');
     var card = sec.querySelector('.device');
+    var view = sec.querySelector('.device-view');
+    var frame = sec.querySelector('.device-frame');
+    var bezel = sec.querySelector('.device-bezel');
+    var paper = sec.querySelector('.device-paper');
     var screen = sec.querySelector('.device-screen');
     var tracks = Array.prototype.slice.call(sec.querySelectorAll('.device-track'));
-    if (!pin || !stage || !card || !screen || !tracks.length) return;
+    if (!pin || !stage || !card || !view || !frame || !bezel || !paper || !screen || !tracks.length) return;
     var captions = Array.prototype.slice.call(sec.querySelectorAll('.story-caption li'));
     var balloons = Array.prototype.slice.call(sec.querySelectorAll('.balloon'));
     var track = tracks[0], blocks = [], STEPS = 0;
     var on = false, step = -1, queued = false, offsets = [];
+    var screenScale = 1, motion = [], lastScroll = window.scrollY;
+    var sharedSelector = '.site-logo, .site-links, .site-burger, .site-hero-copy, .site-art-wrap, .site-bento, .shop-cards, .inst-cards, .inst-posts, .site-offer-head, .shop-cartbox, .site-contact, .site-quote-copy';
+    card.classList.add('is-ready');
 
     // balão e legenda de cada etapa, por tipo de site (a landing é o que já está no HTML)
     var COPY = {
@@ -531,6 +597,102 @@
     function fits() { return !reduceMotion.matches && window.innerHeight >= 420; }
     function clamp(v) { return Math.min(1, Math.max(0, v)); }
     function cubic(t) { return 1 - Math.pow(1 - t, 3); }
+    function cancelMotion() {
+      motion.forEach(function (a) { a.onfinish = null; a.cancel(); });
+      motion = [];
+      card.classList.remove('is-morphing');
+    }
+    function layoutDevice() {
+      var mobile = card.getAttribute('data-view') === 'mobile';
+      var pinned = sec.classList.contains('is-story');
+      var available = Math.max(120, view.clientWidth), bezel = 20;
+      var logicalWidth = mobile ? 300 : 960;
+      var width, height;
+      if (pinned) {
+        view.style.height = ''; // mede a altura que o CSS dá à janela (não a que esta função escreveu na chamada anterior)
+        var room = view.clientHeight;
+        width = mobile ? Math.min(available, 340, (room - bezel) * .53 + bezel) : Math.min(available, (room * .82 - bezel) * 1.89 + bezel);
+        height = mobile ? room : (width - bezel) / 1.89 + bezel;
+        // tela estreita: a moldura é limitada pela LARGURA e fica mais baixa que a janela; a janela acompanha, senão sobra um
+        // vão entre a barra e a tela (visto em 390 px)
+        if (!mobile && height < room) { view.style.height = Math.round(height) + 'px'; }
+      } else {
+        view.style.height = '';
+        width = mobile ? Math.min(available, 320) : available;
+      }
+      width = Math.max(bezel + 1, width);
+      screenScale = (width - bezel) / logicalWidth;
+      screen.style.width = logicalWidth + 'px';
+      screen.style.height = pinned ? ((height - bezel) / screenScale) + 'px' : 'auto';
+      screen.style.transform = 'scale(' + screenScale + ')';
+      screen.style.borderRadius = ((mobile ? 20 : 14) / screenScale) + 'px';
+      frame.style.width = width + 'px';
+      frame.style.height = (pinned ? height : Math.ceil(track.offsetHeight * screenScale) + bezel) + 'px';
+    }
+    function captureDevice() {
+      var sr = screen.getBoundingClientRect();
+      return {
+        frame: bezel.getBoundingClientRect(), screen: sr, scale: sr.width / screen.offsetWidth,
+        paper: paper.getBoundingClientRect(),
+        radius: window.getComputedStyle(frame).borderRadius,
+        parts: Array.prototype.map.call(track.querySelectorAll(sharedSelector), function (el) {
+          var r = el.getBoundingClientRect();
+          return { el: el, rect: r, visible: r.width > 0 && r.height > 0 && r.bottom >= sr.top && r.top <= sr.bottom };
+        })
+      };
+    }
+    function setView(next) {
+      if (next === card.getAttribute('data-view')) return;
+      var before = captureDevice();
+      cancelMotion();
+      card.setAttribute('data-view', next);
+      layoutDevice();
+      measure();
+      if (on) update();
+      if (reduceMotion.matches || !frame.animate) return;
+      var after = captureDevice(), a = before.frame, b = after.frame;
+      if (!a.width || !b.width) return;
+      var sx = a.width / b.width, sy = a.height / b.height;
+      var duration = window.innerWidth <= 700 ? 650 : 800;
+      var timing = { duration: duration, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'both' };
+      card.classList.add('is-morphing');
+      // Only the two empty surfaces scale in two axes. Content has no anisotropic
+      // ancestor, so its proportions also survive delayed compositor frames.
+      var frameMotion = frame.animate([
+        { transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px)', clipPath: 'inset(0px ' + (b.width - a.width) + 'px ' + (b.height - a.height) + 'px 0px round ' + before.radius + ')' },
+        { transform: 'none', clipPath: 'inset(0px round ' + after.radius + ')' }
+      ], timing);
+      motion.push(frameMotion);
+      motion.push(bezel.animate([
+        { transform: 'scale(' + sx + ',' + sy + ')' },
+        { transform: 'none' }
+      ], timing));
+      motion.push(screen.animate([
+        { transform: 'translate(' + (before.screen.left - a.left - 10) + 'px,' + (before.screen.top - a.top - 10) + 'px) scale(' + before.scale + ')' },
+        { transform: 'scale(' + after.scale + ')' }
+      ], timing));
+      motion.push(paper.animate([
+        { transform: 'translate(' + (before.paper.left - a.left - 10) + 'px,' + (before.paper.top - a.top - 10) + 'px) scale(' + (before.paper.width / after.paper.width) + ',' + (before.paper.height / after.paper.height) + ')' },
+        { transform: 'none' }
+      ], timing));
+      after.parts.forEach(function (part) {
+        var prev = before.parts.filter(function (p) { return p.el === part.el; })[0];
+        if (!prev || !prev.visible || !part.visible) return;
+        var localX = (part.rect.left - after.screen.left) / after.scale;
+        var localY = (part.rect.top - after.screen.top) / after.scale;
+        var dx = (prev.rect.left - before.screen.left) / before.scale - localX;
+        var dy = (prev.rect.top - before.screen.top) / before.scale - localY;
+        var size = (prev.rect.width / before.scale) / (part.rect.width / after.scale);
+        // Uniform scaling retains the proportions of type and illustrations.
+        motion.push(part.el.animate([
+          { transformOrigin: '0 0', transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + size + ')' },
+          { transformOrigin: '0 0', transform: 'none' }
+        ], timing));
+      });
+      var startedAt = document.timeline.currentTime;
+      motion.forEach(function (animation) { animation.startTime = startedAt; });
+      frameMotion.onfinish = function () { cancelMotion(); measure(); queue(); };
+    }
     function setStep(s) {
       if (s === step) return;
       step = s;
@@ -543,10 +705,10 @@
       var r = pin.getBoundingClientRect(), vh = window.innerHeight;
       if (r.top > vh * 1.2 || r.bottom < -vh * 0.2) return; // longe da tela: nada a fazer
 
-      // entrada (antes de prender): "tampa abrindo" — inclinado, menor e mais abaixo → assentado
+      // Entrada contida: a transformação principal responde ao seletor de dispositivo.
       var preRoll = Math.min(Math.max(vh * 0.6, 300), 650);
       var settle = clamp((preRoll - r.top) / preRoll), eased = cubic(settle);
-      card.style.transform = 'translateY(' + (70 * (1 - settle)).toFixed(1) + 'px) rotateX(' + (34 * (1 - eased)).toFixed(2) + 'deg) scale(' + (0.82 + 0.18 * eased).toFixed(3) + ')';
+      card.style.transform = 'translateY(' + (20 * (1 - settle)).toFixed(1) + 'px)';
       card.style.opacity = Math.min(1, eased * 1.9).toFixed(3);
 
       // preso: o progresso monta os blocos em sequência e rola a tela por dentro
@@ -566,7 +728,7 @@
     }
     function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
     function measure() {
-      if (!on) return;
+      if (!on) { layoutDevice(); return; }
       // offsetHeight, não scrollHeight: um bloco ainda entrando (deslocado para baixo pelo transform) estica o scrollHeight e
       // a tela rolava além do fim do site, deixando uma faixa branca sob o rodapé
       var max = Math.max(0, track.offsetHeight - screen.clientHeight - 1), sh = screen.clientHeight; // 1 px de folga: nunca sobra fresta
@@ -575,15 +737,18 @@
       queue();
     }
     function sync() {
+      cancelMotion();
       var want = fits();
       // a história só vale se o palco inteiro (topo, tablet e legenda) couber na janela; senão (ex.: 390 × 480, paisagem
       // num celular) a seção rola normalmente, sem o tablet ficar preso por baixo do cabeçalho
       if (want) {
         if (!on) sec.classList.add('is-story');
+        layoutDevice();
         var cs = window.getComputedStyle(stage), fig = card.parentNode, cap = sec.querySelector('.story-caption');
         var precisa = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.rowGap) || 0) + fig.offsetHeight + (cap ? cap.offsetHeight : 0);
         // compara com o próprio palco (100svh) e tolera uns px, como a versão anterior tolerava sem avisar
-        if (precisa > stage.clientHeight + 24) { want = false; if (!on) sec.classList.remove('is-story'); }
+        // 140: em celular (390 px) a moldura web tem ~165 px de altura e a história continua valendo (era 220 antes da janela seguir a moldura)
+        if (precisa > stage.clientHeight + 24 || view.clientHeight < 140) { want = false; if (!on) sec.classList.remove('is-story'); }
       }
       if (want !== on) {
         on = want;
@@ -599,6 +764,7 @@
           captions.forEach(function (li) { li.classList.remove('is-on'); });
         }
       }
+      layoutDevice();
       if (on) { measure(); update(); }
     }
 
@@ -606,6 +772,7 @@
     function setKind(kind) {
       var next = tracks.filter(function (t) { return t.getAttribute('data-track') === kind; })[0];
       if (!next || !COPY[kind]) return;
+      cancelMotion();
       tracks.forEach(function (t) { t.hidden = t !== next; });
       track = next;
       blocks = Array.prototype.slice.call(track.querySelectorAll('.wire-block'));
@@ -626,13 +793,16 @@
     Array.prototype.forEach.call(sec.querySelectorAll('[data-views] button'), function (btn) {
       btn.addEventListener('click', function () {
         press(btn.parentNode, btn);
-        card.setAttribute('data-view', btn.getAttribute('data-view'));
-        setTimeout(measure, 750); // depois da transição de largura
+        setView(btn.getAttribute('data-view'));
       });
     });
     setKind('landing');
 
-    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('scroll', function () {
+      if (motion.length && Math.abs(window.scrollY - lastScroll) > 2) cancelMotion();
+      lastScroll = window.scrollY;
+      queue();
+    }, { passive: true });
     window.addEventListener('resize', sync);
     window.addEventListener('load', sync);
     // a altura do site dentro do tablet muda com a largura e com a fonte carregada: remede
@@ -640,17 +810,13 @@
     if (reduceMotion.addEventListener) reduceMotion.addEventListener('change', sync);
     else if (reduceMotion.addListener) reduceMotion.addListener(sync);
     sync();
+    window.addEventListener('pagehide', cancelMotion);
   })();
 
-  /* ---------- Peças que se montam no scroll (#como-funciona: os quatro passos) ----------
-     Cada peça [data-fly="x,y,giro,ordem"] nasce fora da tela e entra UMA DE CADA VEZ conforme o
-     scroll: o transform é função direta do pixel rolado, sem transição. Movimento limpo: percurso
-     reto, giro mínimo, sem mudança forte de escala.
-     · Preso (.is-pinned, quando o painel de três colunas cabe na janela): o trecho preso é dividido
-       em janelas, uma por peça, na ordem de data-fly; x/y dizem de onde ela vem (% da janela).
-     · Solto (telas estreitas ou baixas): cada peça entra quando ELA chega à tela, vindo do lado
-       em que está (esquerda ou direita).
-     Parado, já montado, com movimento reduzido. */
+  /* ---------- Processo: linha → progresso → estrutura ----------
+     Scroll natural, sem prender a seção. Cada etapa assenta apenas 20 px, fica azul e alimenta a linha.
+     O pequeno fragmento final abre suas divisões: uma estrutura que continua recebendo conteúdo.
+     A posição de scroll governa também a volta; movimento reduzido mostra o estado completo. */
   (function bento() {
     var pin = document.querySelector('[data-bento]');
     if (!pin) return;
@@ -661,60 +827,47 @@
     });
     if (!grid || !tiles.length) return;
     var N = tiles.length, STEP = 0.78 / Math.max(1, N - 1), SPAN = 0.22; // a última peça termina em p = 1
-    var on = false, pinned = false, queued = false;
+    var on = false, queued = false;
 
     function clamp(v) { return Math.min(1, Math.max(0, v)); }
     function ease(t) { return 1 - Math.pow(1 - t, 4); }
     // u = progresso LINEAR da peça (0 = fora, 1 = assentada): governa a lógica (cor, ordem); o easing só serve ao desenho
     function place(t, u, x, y) {
+      if (u > 1 - 0.000001) u = 1; // a última janela pode terminar em 0.9999999999999999
       var e = ease(u), k = 1 - e;
       t.u = u; t.e = e;
-      t.done = u >= 1 || (Math.abs(x * k) <= 1 && Math.abs(y * k) <= 1 && Math.abs(t.r * k) <= 0.05); // assentada: resíduo ≤ 1 px e giro final
-      t.el.style.transform = 'translate3d(' + (x * k).toFixed(1) + 'px,' + (y * k).toFixed(1) + 'px,0) rotate(' + (t.r * k).toFixed(2) + 'deg) scale(' + (0.94 + 0.06 * e).toFixed(3) + ')';
-      t.el.style.opacity = clamp(e * 1.6).toFixed(3);
+      t.done = u >= 1;
+      t.el.style.transform = 'translate3d(' + (x * k).toFixed(1) + 'px,' + (y * k).toFixed(1) + 'px,0)';
+      t.el.style.setProperty('--step-p', u.toFixed(4));
+      t.el.style.willChange = u > 0 && u < 1 ? 'transform' : '';
     }
     function update() {
       queued = false;
       if (!on) return;
       var vh = window.innerHeight, vw = window.innerWidth;
-      if (pinned) {
-        var palcoEl = pin.querySelector('.bento-stage');
-        var r = pin.getBoundingClientRect(), total = Math.max(1, pin.offsetHeight - (palcoEl ? palcoEl.offsetHeight : vh)); // o trecho preso dura até o palco encostar no fim
-        if (r.top > vh * 1.3 || r.bottom < -vh * 0.3) return;
-        // começa quando o título já saiu de cena e termina a 85 % do trecho preso: o resto é para olhar
-        var p = clamp((vh * 0.25 - r.top) / (vh * 0.25 + total * 0.85));
-        pin.style.setProperty('--bento-p', p.toFixed(4)); // a linha que liga os passos se desenha junto
-        tiles.forEach(function (t) { place(t, clamp((p - t.i * STEP) / SPAN), t.x / 100 * vw, t.y / 100 * vh); });
+      var g = grid.getBoundingClientRect();
+      if (vw > 1100) {
+        var q = clamp((vh * 0.9 - g.top) / (vh * 0.48));
+        pin.style.setProperty('--bento-p', q.toFixed(4));
+        tiles.forEach(function (t) { place(t, clamp((q - t.i * STEP) / SPAN), t.x, t.y); });
       } else {
-        var g = grid.getBoundingClientRect();
-        if (g.top > vh * 1.3 || g.bottom < -vh * 0.3) return;
-        if (vw > 1100) {
-          // quatro passos na mesma linha, mas sem prender (janela baixa): a MESMA sequência do modo preso (uma peça por
-          // janela de progresso, na ordem de data-fly), guiada pela posição do painel — nunca duas peças juntas
-          var q = clamp((vh * 0.92 - g.top) / (vh * 0.62));
-          pin.style.setProperty('--bento-p', q.toFixed(4));
-          tiles.forEach(function (t) { place(t, clamp((q - t.i * STEP) / SPAN), t.x / 100 * vw, t.y / 100 * vh); });
-        } else {
-          // uma coluna (celular/tablet): cada peça entra quando o lugar dela aparece embaixo, na ordem natural de leitura
-          pin.style.setProperty('--bento-p', clamp((vh * 0.9 - g.top) / Math.max(1, g.height + vh * 0.2)).toFixed(4));
-          tiles.forEach(function (t) {
-            var u = clamp((vh * 0.92 - (g.top + t.top)) / (vh * 0.5));
-            var rise = t.x === 0 && Math.abs(t.y) < 20; // legenda: só sobe de leve, sem vir do lado
-            place(t, u, rise ? 0 : -vw * 0.6, vh * 0.06);
-          });
-        }
+        tiles.forEach(function (t) {
+          var u = clamp((vh * 0.86 - (g.top + t.top)) / (vh * 0.28));
+          place(t, u, 0, 16);
+        });
       }
+      pin.style.setProperty('--site-p', clamp((tiles[N - 1].u - 0.5) / 0.5).toFixed(4));
       marca();
     }
-    // a cor só muda quando a peça ASSENTA (u = 1: translação e giro zerados): o recém-chegado fica azul (.is-now) até o próximo
-    // assentar; com os quatro assentados, o conjunto inteiro (.is-all). Tudo derivado da posição de scroll, sem timers.
+    // a cor só muda quando a peça ASSENTA: a concluída ganha o preenchimento azul e fica assim (.is-done);
+    // com as quatro assentadas, .is-all. Tudo derivado da posição de scroll, sem timers (voltar o scroll desfaz na mesma ordem).
     function marca() {
       var ordem = tiles.filter(function (t) { return t.el.classList.contains('step'); }).sort(function (a, b) { return a.i - b.i; });
       if (!ordem.length) return;
-      var todos = ordem.every(function (t) { return t.done; }), agora = -1;
-      ordem.forEach(function (t, k) { if (t.done) agora = k; });
+      // Estados acumulados, derivados do progresso atual, inclusive ao voltar o scroll.
+      var todos = ordem.every(function (t) { return t.done; });
+      ordem.forEach(function (t) { t.el.classList.toggle('is-done', !!t.done); });
       pin.classList.toggle('is-all', todos);
-      ordem.forEach(function (t, k) { t.el.classList.toggle('is-now', !todos && k === agora); });
     }
     function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
     function measure() { // posição de cada peça dentro do painel, sem contar o transform
@@ -732,22 +885,10 @@
       if (want !== on) {
         on = want;
         pin.classList.toggle('is-fly', on);
-        if (!on) { tiles.forEach(function (t) { t.el.style.transform = ''; t.el.style.opacity = ''; t.el.classList.remove('is-now'); }); pin.classList.remove('is-all'); }
-      }
-      // prende na tela só quando o painel de três colunas cabe (com alguma redução) na janela
-      pin.classList.remove('is-pinned');
-      pin.style.height = '';
-      pin.style.removeProperty('--bento-scale');
-      pinned = false;
-      if (on && window.innerWidth > 1100) {
-        var room = window.innerHeight - 92 - 120, scale = Math.min(1, room / Math.max(1, grid.offsetHeight));
-        var palco = pin.querySelector('.bento-stage');
-        var cabe = !palco || palco.scrollHeight + 136 + 28 <= window.innerHeight; // conteúdo inteiro abaixo do topo, com folga
-        if (scale >= 0.62 && cabe) {
-          pinned = true;
-          pin.classList.add('is-pinned');
-          if (palco) pin.style.height = Math.round(palco.offsetHeight + window.innerHeight * 1.3) + 'px'; // conteúdo + 130 % da janela de scroll preso
-          pin.style.setProperty('--bento-scale', scale.toFixed(3));
+        if (!on) {
+          tiles.forEach(function (t) { t.el.style.transform = ''; t.el.style.willChange = ''; t.el.style.removeProperty('--step-p'); t.el.classList.remove('is-done'); });
+          pin.classList.remove('is-all');
+          pin.style.removeProperty('--bento-p'); pin.style.removeProperty('--site-p');
         }
       }
       if (on) { measure(); update(); }
@@ -761,7 +902,7 @@
     sync();
   })();
 
-  /* ---------- FAQ animado (referência: onexcloud.onexdc.com.br) ----------
+  /* ---------- FAQ: abrir/recolher em um único gesto ----------
      O <details> nativo continua sendo a base (e o que vale sem JS). Aqui a resposta é embrulhada em .faq-a > .faq-a-inner
      para a altura animar por grid-template-rows; .is-open comanda o visual e o atributo open só sai DEPOIS de a altura
      fechar, senão o conteúdo sumiria de uma vez. Um cartão aberto por vez (o atributo name sai: ele fecharia os outros
@@ -777,20 +918,45 @@
       wrap.appendChild(inner); d.appendChild(wrap);
       d.removeAttribute('name');
       if (d.open) d.classList.add('is-open');
-      d._t = 0;
       summary.addEventListener('click', function (e) {
         e.preventDefault();
         var abrir = !d.classList.contains('is-open');
         items.forEach(function (o) { if (o !== d) fechar(o); });
-        if (abrir) { clearTimeout(d._t); d.open = true; void d.offsetHeight; d.classList.add('is-open'); } else fechar(d);
+        if (abrir) {
+          if (d._cancelClose) d._cancelClose();
+          d.open = true; void d.offsetHeight; d.classList.add('is-open');
+        } else fechar(d);
       });
     });
     function fechar(d) {
       if (!d.classList.contains('is-open')) return;
       d.classList.remove('is-open');
-      clearTimeout(d._t);
-      d._t = setTimeout(function () { if (!d.classList.contains('is-open')) d.open = false; }, reduceMotion.matches ? 0 : 470);
+      if (d._cancelClose) d._cancelClose();
+      var wrap = d.querySelector('.faq-a'), timer;
+      function cleanup() {
+        clearTimeout(timer);
+        wrap.removeEventListener('transitionend', ended);
+        d._cancelClose = d._finishClose = null;
+      }
+      function finish() { cleanup(); if (!d.classList.contains('is-open')) d.open = false; }
+      function ended(e) { if (e.target === wrap && e.propertyName === 'grid-template-rows') finish(); }
+      if (reduceMotion.matches) { finish(); return; }
+      var style = getComputedStyle(wrap);
+      function milliseconds(value) { return parseFloat(value) * (value.indexOf('ms') > -1 ? 1 : 1000) || 0; }
+      var durations = style.transitionDuration.split(',').map(milliseconds);
+      var delays = style.transitionDelay.split(',').map(milliseconds);
+      var total = style.transitionProperty.split(',').reduce(function (max, prop, i) {
+        return prop.trim() === 'all' || prop.trim() === 'grid-template-rows' ? Math.max(max, durations[i % durations.length] + delays[i % delays.length]) : max;
+      }, 0);
+      if (!total) { finish(); return; }
+      d._cancelClose = cleanup; d._finishClose = finish;
+      wrap.addEventListener('transitionend', ended);
+      // Fallback derivado do CSS para aba oculta, resposta vazia ou transição sem evento.
+      timer = setTimeout(finish, total + 80);
     }
+    function motionChanged() { if (reduceMotion.matches) items.forEach(function (d) { if (d._finishClose) d._finishClose(); }); }
+    if (reduceMotion.addEventListener) reduceMotion.addEventListener('change', motionChanged);
+    else if (reduceMotion.addListener) reduceMotion.addListener(motionChanged);
     list.classList.add('is-js');
   })();
 

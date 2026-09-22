@@ -66,6 +66,129 @@
   var ICON_NEXT = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg>';
   var SIZES = '(max-width: 899px) 92vw, 66vw';
   var gal = null;
+  var galleryMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  // Uma cópia visual curta conserva inclusive o recorte de um hover interrompido.
+  // Não reutiliza classes/IDs: o carrossel e suas container queries continuam intactos.
+  var SNAP_STYLE = ('display position box-sizing top right bottom left width height min-width min-height max-width max-height margin padding border border-radius background color font text-align line-height letter-spacing overflow overflow-x overflow-y opacity visibility object-fit object-position transform transform-origin flex flex-direction flex-shrink align-items justify-content gap box-shadow z-index white-space').split(' ');
+  function gallerySnapshot(node) {
+    if (!node) { return null; }
+    var box = node.getBoundingClientRect();
+    if (box.width < 2 || box.height < 2 || box.bottom <= 0 || box.top >= innerHeight) { return null; }
+    // A capa pode ser clicada enquanto ainda assenta no carrossel (rotação até 3°).
+    var angle = 0, ancestor = node;
+    if (window.DOMMatrixReadOnly) {
+      while (ancestor && ancestor.nodeType === 1) {
+        var transform = getComputedStyle(ancestor).transform;
+        if (transform !== 'none') {
+          var matrix = new DOMMatrixReadOnly(transform);
+          angle += Math.atan2(matrix.b, matrix.a);
+        }
+        ancestor = ancestor.parentElement;
+      }
+    }
+    if (Math.abs(angle) > .0001 && Math.abs(angle) < .35) {
+      var cosine = Math.abs(Math.cos(angle)), sine = Math.abs(Math.sin(angle)), determinant = cosine * cosine - sine * sine;
+      var unrotatedW = (box.width * cosine - box.height * sine) / determinant;
+      var unrotatedH = (box.height * cosine - box.width * sine) / determinant;
+      box = { left: box.left + (box.width - unrotatedW) / 2, top: box.top + (box.height - unrotatedH) / 2, width: unrotatedW, height: unrotatedH };
+    } else { angle = 0; }
+    var copy = node.cloneNode(true), originals = [node].concat(Array.prototype.slice.call(node.querySelectorAll('*')));
+    var copies = [copy].concat(Array.prototype.slice.call(copy.querySelectorAll('*')));
+    originals.forEach(function (item, i) {
+      var clone = copies[i], cs = getComputedStyle(item);
+      clone.removeAttribute('class'); clone.removeAttribute('id'); clone.removeAttribute('style');
+      clone.removeAttribute('tabindex'); clone.setAttribute('aria-hidden', 'true');
+      SNAP_STYLE.forEach(function (key) { clone.style.setProperty(key, cs.getPropertyValue(key)); });
+      clone.style.transition = 'none'; clone.style.animation = 'none'; clone.style.pointerEvents = 'none';
+      if (item.tagName === 'IMG') {
+        clone.removeAttribute('srcset'); clone.removeAttribute('sizes');
+        var imageSource = item.currentSrc || item.getAttribute('src');
+        if (imageSource) { clone.src = imageSource; } else { clone.removeAttribute('src'); }
+        clone.alt = ''; clone.loading = 'eager';
+      }
+      // Uma captura ampliada pode estar rolada nos dois eixos.
+      if (item.scrollLeft || item.scrollTop) {
+        Array.prototype.forEach.call(clone.children, function (child) {
+          child.setAttribute('data-snapshot-scroll', item.scrollLeft + ',' + item.scrollTop);
+        });
+      }
+      var scroll = clone.getAttribute('data-snapshot-scroll');
+      if (scroll) {
+        var xy = scroll.split(',');
+        clone.style.transform = 'translate(' + (-Number(xy[0])) + 'px,' + (-Number(xy[1])) + 'px) ' + (cs.transform === 'none' ? '' : cs.transform);
+        clone.removeAttribute('data-snapshot-scroll');
+      }
+    });
+    var width = node.offsetWidth || box.width, height = node.offsetHeight || box.height;
+    copy.style.position = 'absolute'; copy.style.left = '0'; copy.style.top = '0';
+    copy.style.right = 'auto'; copy.style.bottom = 'auto'; copy.style.margin = '0';
+    copy.style.width = width + 'px'; copy.style.height = height + 'px';
+    copy.style.minWidth = '0'; copy.style.maxWidth = 'none'; copy.style.minHeight = '0'; copy.style.maxHeight = 'none';
+    copy.style.transformOrigin = '0 0'; copy.style.transform = 'scale(' + box.width / width + ',' + box.height / height + ')';
+    copy.style.visibility = 'visible'; copy.style.opacity = '1';
+    return { node: copy, box: box, angle: angle * 180 / Math.PI, radius: getComputedStyle(node).borderRadius };
+  }
+
+  function clearGalleryFlight(g) {
+    var m = g.motion;
+    if (!m) { return; }
+    g.motion = null;
+    m.animations.forEach(function (a) { a.onfinish = null; a.cancel(); });
+    m.flight.remove(); m.veil.remove();
+    g.el.classList.remove('is-morphing', 'is-closing');
+    if (m.source) { m.source.style.visibility = m.visibility; }
+  }
+
+  function settleGalleryFlight(g) {
+    if (!g || !g.motion) { return; }
+    var closing = g.motion.closing;
+    clearGalleryFlight(g);
+    if (closing && g.el.open) { g.el.close(); }
+  }
+
+  function flyGallery(g, from, to, closing, backdropFrom) {
+    if (!from || !to || galleryMotion.matches || !Element.prototype.animate) { return false; }
+    var flight = el('div', 'galeria-flight'), veil = el('div', 'galeria-veil');
+    flight.setAttribute('aria-hidden', 'true'); veil.setAttribute('aria-hidden', 'true');
+    flight.style.cssText = 'left:' + from.box.left + 'px;top:' + from.box.top + 'px;width:' + from.box.width + 'px;height:' + from.box.height + 'px;border-radius:' + from.radius;
+    var finalShot = el('div', 'galeria-flight-shot');
+    finalShot.style.width = to.box.width + 'px'; finalShot.style.height = to.box.height + 'px';
+    finalShot.style.transform = 'scale(' + from.box.width / to.box.width + ',' + from.box.height / to.box.height + ')';
+    finalShot.appendChild(to.node); flight.appendChild(from.node); flight.appendChild(finalShot);
+    var source = g.sourceElement;
+    var m = g.motion = { flight: flight, veil: veil, closing: closing, animations: [], source: source, visibility: source ? source.style.visibility : '' };
+    g.el.classList.add('is-morphing'); g.el.classList.toggle('is-closing', closing);
+    g.el.appendChild(veil); g.el.appendChild(flight);
+    if (source) { source.style.visibility = 'hidden'; }
+    var duration = closing ? (innerWidth <= 760 ? 420 : 500) : (innerWidth <= 760 ? 650 : 900);
+    var options = { duration: duration, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'both' };
+    function animate(node, frames, timing) { var a = node.animate(frames, timing || options); m.animations.push(a); return a; }
+    function frame(r, angle) {
+      return 'translate(' + (r.left - from.box.left + r.width / 2) + 'px,' + (r.top - from.box.top + r.height / 2) + 'px) rotate(' + (angle || 0) + 'deg) scale(' + r.width / from.box.width + ',' + r.height / from.box.height + ') translate(' + (-from.box.width / 2) + 'px,' + (-from.box.height / 2) + 'px)';
+    }
+    var main = animate(flight, [{ transform: frame(from.box, from.angle) }, { transform: frame(to.box, to.angle) }]);
+    // As superfícies trocam dentro da mesma janela: nunca se apaga a capa para abrir outro modal.
+    animate(finalShot, [{ opacity: 0, offset: 0 }, { opacity: 0, offset: .55 }, { opacity: 1, offset: .9 }, { opacity: 1 }]);
+    animate(from.node, [{ opacity: 1, offset: 0 }, { opacity: 1, offset: .55 }, { opacity: 0, offset: .9 }, { opacity: 0 }]);
+    var whole = { left: 0, top: 0, width: innerWidth, height: innerHeight };
+    function plane(r) { return 'translate(' + r.left + 'px,' + r.top + 'px) scale(' + r.width / innerWidth + ',' + r.height / innerHeight + ')'; }
+    animate(veil, [{ transform: plane(backdropFrom || (closing ? whole : from.box)), borderRadius: closing ? '0px' : from.radius }, { transform: plane(closing ? to.box : whole), borderRadius: closing ? to.radius : '0px' }]);
+    animate(g.dentro, closing ? [{ opacity: 1 }, { opacity: 0, offset: .4 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 0, offset: .4 }, { opacity: 1 }]);
+    main.onfinish = function () { if (g.motion === m) { settleGalleryFlight(g); } };
+    return true;
+  }
+
+  function visibleCover(li) {
+    var screen = li.querySelector('.pasta-janela'), best = null, area = -1;
+    if (!screen) { return null; }
+    var box = screen.getBoundingClientRect();
+    Array.prototype.forEach.call(screen.querySelectorAll('img'), function (im) {
+      var r = im.getBoundingClientRect(), overlap = Math.max(0, Math.min(r.bottom, box.bottom) - Math.max(r.top, box.top));
+      if (overlap > area && im.complete && im.naturalWidth) { area = overlap; best = im; }
+    });
+    return best;
+  }
 
   function buildGallery() {
     var d = document.createElement('dialog');
@@ -85,15 +208,17 @@
           '<div class="galeria-anel" aria-hidden="true"><div class="ga-palco"><div class="ga-giro"></div></div><i class="ga-regua"></i></div>' +
           '<button class="galeria-seta" type="button" data-dir="1" aria-label="Próxima tela">' + ICON_NEXT + '</button>' +
           '<button class="galeria-ampliar" type="button" aria-pressed="false">Ampliar tela</button></div>' +
+        '<p class="galeria-pos" aria-hidden="true"></p>' + // 2.30: "2 de 5 telas" abaixo do anel (o aria-live da legenda já anuncia a posição)
         '<p class="galeria-desc"></p>' +
       '</div>';
     document.body.appendChild(d);
     var g = {
-      el: d, tipo: d.querySelector('.galeria-tipo'), titulo: d.querySelector('.galeria-titulo'), desc: d.querySelector('.galeria-desc'),
+      el: d, dentro: d.querySelector('.galeria-in'), tipo: d.querySelector('.galeria-tipo'), titulo: d.querySelector('.galeria-titulo'), desc: d.querySelector('.galeria-desc'),
       legenda: d.querySelector('.galeria-conta span'), posicao: d.querySelector('.galeria-conta .sr-only'), // "Tela 2 de 5" só para leitores de tela
-      layers: d.querySelectorAll('.galeria-tela img'), palco: d.querySelector('.galeria-palco'), tela: d.querySelector('.galeria-tela'),
+      pos: d.querySelector('.galeria-pos'), nav: d.querySelector('.galeria-nav'), conta: d.querySelector('.galeria-conta'), topo: d.querySelector('.galeria-topo'),
+      layers: d.querySelectorAll('.galeria-tela img'), palco: d.querySelector('.galeria-palco'), tela: d.querySelector('.galeria-tela'), moldura: d.querySelector('.galeria-moldura'),
       aviso: d.querySelector('.galeria-aviso'), ampliar: d.querySelector('.galeria-ampliar'),
-      slides: [], index: -1, shown: -1, front: 0, token: 0, opener: null,
+      slides: [], index: -1, shown: -1, front: 0, token: 0, opener: null, sourceElement: null, motion: null,
       anel: { box: d.querySelector('.galeria-anel'), palco: d.querySelector('.ga-palco'), giro: d.querySelector('.ga-giro'), regua: d.querySelector('.ga-regua'), paineis: [], n: 0, R: 0, ang: 0, alvo: 0, raf: 0, drag: null }
     };
     ringBind(g);
@@ -105,6 +230,7 @@
     d.addEventListener('keydown', function (e) {
       if (e.altKey || e.ctrlKey || e.metaKey) { return; }
       if (e.key === 'Tab') {
+        if (g.motion && !g.motion.closing) { settleGalleryFlight(g); }
         // o Tab circula dentro do diálogo (sem isso o navegador leva o foco para a própria interface por um instante)
         var foco = Array.prototype.filter.call(d.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])'), function (el) { return !el.disabled && !el.hidden && el.getClientRects().length; });
         if (foco.length) {
@@ -120,10 +246,19 @@
     });
     d.addEventListener('cancel', function (e) { e.preventDefault(); closeGallery(); }); // Esc passa pela mesma saída
     d.addEventListener('close', function () {
+      clearGalleryFlight(g);
+      if (g.anel.raf) { cancelAnimationFrame(g.anel.raf); g.anel.raf = 0; }
+      g.anel.drag = null; g.anel.box.classList.remove('is-arrastando');
+      g.token++;
       document.documentElement.classList.remove('galeria-aberta');
       d.classList.remove('is-closing');
       setZoom(false);
-      if (g.opener && g.opener.focus) { g.opener.focus({ preventScroll: true }); }
+      if (g.opener && g.opener.focus) {
+        g.opener.focus({ preventScroll: true });
+        var focusBox = g.opener.getBoundingClientRect();
+        // Um resize pode reposicionar as seções atrás do diálogo; o foco de retorno precisa continuar visível.
+        if (focusBox.top < 0 || focusBox.bottom > innerHeight) { g.opener.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' }); }
+      }
     });
     // swipe horizontal na tela; o gesto vertical continua rolando a galeria (touch-action: pan-y). Ampliada, o arrasto é do zoom.
     var sx = null, sy = null;
@@ -145,6 +280,7 @@
     g.ampliar.setAttribute('aria-pressed', String(!!on));
     g.ampliar.textContent = on ? 'Reduzir tela' : 'Ampliar tela';
     if (!on) { g.tela.scrollLeft = 0; g.tela.scrollTop = 0; }
+    if (g.el.open) { ajusta(g); }
   }
 
   /* ------------------------------------------------------------------
@@ -252,14 +388,21 @@
     r.palco.addEventListener('pointerup', soltar);
     r.palco.addEventListener('pointercancel', soltar);
     r.palco.addEventListener('dragstart', function (e) { e.preventDefault(); });
-    window.addEventListener('resize', function () { if (g.el.open) { ringMeasure(g); } });
+    window.addEventListener('resize', function () { if (g.el.open) { settleGalleryFlight(g); ringMeasure(g); ajusta(g); } });
+    window.addEventListener('orientationchange', function () { if (g.el.open) { settleGalleryFlight(g); setTimeout(function () { if (g.el.open) { ringMeasure(g); ajusta(g); } }, 120); } });
   }
 
   function go(i) {
     var g = gal, n = g.slides.length;
+    if (g.motion && g.motion.closing) { return; }
+    settleGalleryFlight(g);
     if (!n) { return; }
     i = ((i % n) + n) % n; // dá a volta nas pontas
     if (i === g.index) { return; }
+    // tela que já falhou: pula para a seguinte no sentido do pedido (senão a seta ficaria presa nela)
+    var sentido = g.index < 0 ? 1 : (((i - g.index) % n) + n) % n <= n / 2 ? 1 : -1, tentativas = 0;
+    while (g.slides[i].erro && tentativas < n) { i = ((i + sentido) % n + n) % n; tentativas++; }
+    if (tentativas >= n || i === g.index) { return; }
     g.index = i; // o pedido; g.shown é o que está na tela
     ringTo(g, i); // o anel gira na hora para a tela pedida
     var slide = g.slides[i], token = ++g.token;
@@ -277,6 +420,7 @@
         g.shown = i; g.aviso.hidden = true;
         g.posicao.textContent = 'Tela ' + (i + 1) + ' de ' + n + ': ';
         g.legenda.textContent = slide.label;
+        g.pos.textContent = (i + 1) + ' de ' + n + (n === 1 ? ' tela' : ' telas'); // só o que está de fato na tela (g.shown), nunca "0 de N"
       };
       // decode() evita o engasgo na troca, mas pode demorar a resolver sem quadros novos na tela: não seguramos a tela por ele
       var shown = false, once = function () { if (!shown) { shown = true; show(); } };
@@ -284,10 +428,12 @@
     };
     loader.onerror = function () {
       if (token !== g.token) { return; }
+      slide.erro = true;
       if (g.shown < 0) { // nem a primeira carregou: aviso útil; setas, anel e Fechar continuam
         g.aviso.hidden = false; g.legenda.textContent = 'Tela indisponível';
       }
       g.index = g.shown; // setas e teclado continuam a partir da tela que está visível
+      if (g.shown >= 0) { ringTo(g, g.shown); } // o anel volta para a tela que ficou (senão apontaria para a que falhou)
     };
     loader.srcset = slide.srcset; loader.sizes = SIZES; loader.src = slide.src;
     var nextSlide = g.slides[(i + 1) % n]; // pré-carrega só a próxima
@@ -303,6 +449,10 @@
   function openGallery(li, opener) {
     if (!gal) { gal = buildGallery(); }
     var g = gal, cs = getComputedStyle(li);
+    clearGalleryFlight(g);
+    var cover = visibleCover(li);
+    var source = galleryMotion.matches ? null : gallerySnapshot(li.querySelector('.pasta-capa'));
+    g.sourceElement = li.querySelector('.pasta-capa');
     ['bg', 'soft', 'fg', 'mut', 'acc', 'line'].forEach(function (k) {
       var v = cs.getPropertyValue('--p-' + k).trim();
       if (v) { g.el.style.setProperty('--g-' + k, v); } else { g.el.style.removeProperty('--g-' + k); }
@@ -317,21 +467,91 @@
     });
     Array.prototype.forEach.call(g.layers, function (layer) { layer.className = ''; layer.removeAttribute('srcset'); layer.removeAttribute('src'); layer.alt = ''; });
     g.index = -1; g.shown = -1; g.front = 0; g.token++; g.opener = opener || null;
-    g.aviso.hidden = true; g.legenda.textContent = ''; g.posicao.textContent = ''; setZoom(false);
+    g.aviso.hidden = true; g.legenda.textContent = ''; g.posicao.textContent = ''; g.pos.textContent = ''; setZoom(false);
+    var initial = 0;
+    if (cover) {
+      g.slides.forEach(function (slide, i) { if (slide.src === cover.getAttribute('src')) { initial = i; } });
+      // A imagem da capa já carregou. Ela sustenta a abertura enquanto a resolução da galeria decodifica.
+      var first = g.slides[initial], layer = g.layers[0];
+      layer.src = cover.currentSrc || cover.src; layer.alt = first.alt; layer.className = 'is-on';
+      g.shown = initial;
+      g.legenda.textContent = first.label; g.posicao.textContent = 'Tela ' + (initial + 1) + ' de ' + g.slides.length + ': ';
+      g.pos.textContent = (initial + 1) + ' de ' + g.slides.length + (g.slides.length === 1 ? ' tela' : ' telas');
+    }
     document.documentElement.classList.add('galeria-aberta');
-    g.el.showModal();
+    if (!g.el.open) { g.el.showModal(); }
     g.el.scrollTop = 0;
     ringBuild(g); // precisa do diálogo aberto para medir
-    go(0);
+    ajusta(g);
+    go(initial);
+    if (source) { flyGallery(g, source, gallerySnapshot(g.moldura), false); }
+    if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function reajusta() { if (!g.el.open) { return; } if (g.motion) { setTimeout(reajusta, 300); return; } ajusta(g); }); } // se as fontes chegam durante o voo de abertura, remede depois
+  }
+
+  /* 2.30: dimensiona a galeria pela LARGURA E ALTURA disponíveis. A moldura principal recebe a maior largura que cabe
+     (proporção 1200:750) depois de descontar topo, nome, legenda, anel + setas, contador e descrição; se não couber com o
+     anel normal, o anel encolhe (.is-anel-compacto); se ainda não couber, a descrição sai (.is-sem-desc); abaixo de 260 px
+     de tela o diálogo rola (limite registrado). Em paisagem curta (≤ 560 px de altura, ≥ 700 de largura) a tela fica à
+     esquerda e nome, anel, contador e descrição numa coluna à direita (.is-paisagem). Só escreve larguras: sem ciclo. */
+  var paisagem = window.matchMedia('(max-height: 560px) and (min-width: 700px)');
+  function ajusta(g) {
+    var d = g.el;
+    if (!d.open) { return; }
+    var lado = paisagem.matches;
+    d.classList.toggle('is-paisagem', lado);
+    d.classList.remove('is-anel-compacto'); d.classList.remove('is-sem-desc');
+    var alto = function (el) { if (!el || el.hidden) { return 0; } var cs = getComputedStyle(el); return el.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0); };
+    var cs = getComputedStyle(g.dentro);
+    var H = d.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+    var W = g.dentro.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+    var barra = 28, legenda = alto(g.conta) + 10, colW = lado ? Math.floor(W * 0.6) : W;
+    var largura = function () {
+      var outros = lado ? alto(g.topo) : alto(g.topo) + alto(g.titulo) + alto(g.nav) + alto(g.pos) + alto(g.desc) + 4;
+      var altura = H - outros - barra - legenda;
+      return Math.min(colW, 960, Math.max(0, altura) * 1.6);
+    };
+    if (lado) { ringMeasure(g); }
+    var w = largura();
+    // a tela principal manda: se com o anel normal ela ficar pequena (menos de 55 % da largura ou de 760 px), o anel encolhe
+    if (w < Math.min(760, colW * 0.55) && !g.anel.box.hidden) { d.classList.add('is-anel-compacto'); ringMeasure(g); w = largura(); }
+    if (w < 300 && g.desc.textContent) { d.classList.add('is-sem-desc'); w = largura(); }
+    if (lado) {
+      // paisagem: a coluna da direita (nome, anel, contador, descrição) também precisa caber na altura
+      var coluna = function () { return alto(g.titulo) + alto(g.nav) + alto(g.pos) + alto(g.desc); };
+      if (coluna() > H - alto(g.topo) && !d.classList.contains('is-anel-compacto') && !g.anel.box.hidden) { d.classList.add('is-anel-compacto'); ringMeasure(g); }
+      if (coluna() > H - alto(g.topo) && g.desc.textContent) { d.classList.add('is-sem-desc'); }
+      w = largura();
+    }
+    w = Math.max(Math.min(260, colW), w);
+    g.palco.style.width = Math.round(w) + 'px';
+    d.style.setProperty('--tela-w', Math.round(w) + 'px');
+    if (lado) { ringMeasure(g); }
   }
 
   function closeGallery() {
     var g = gal;
     if (!g || !g.el.open) { return; }
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { g.el.close(); return; }
-    g.el.classList.add('is-closing');
-    setTimeout(function () { if (g.el.open) { g.el.close(); } }, 190);
+    if (g.motion && g.motion.closing) { return; }
+    var source = galleryMotion.matches ? null : gallerySnapshot(g.motion ? g.motion.flight : g.moldura);
+    var background = g.motion ? g.motion.veil.getBoundingClientRect() : null;
+    clearGalleryFlight(g);
+    var target = source ? gallerySnapshot(g.sourceElement) : null;
+    if (g.anel.raf) { cancelAnimationFrame(g.anel.raf); g.anel.raf = 0; }
+    if (!flyGallery(g, source, target, true, background)) { g.el.close(); }
   }
+
+  function galleryPreferenceChanged() {
+    if (!gal) { return; }
+    settleGalleryFlight(gal);
+    if (gal.anel.raf) { cancelAnimationFrame(gal.anel.raf); gal.anel.raf = 0; }
+    if (gal.el.open) {
+      ringBuild(gal);
+      if (gal.anel.n && gal.shown >= 0) { gal.anel.ang = -gal.anel.paineis[gal.shown].a; gal.anel.alvo = gal.anel.ang; ringRender(gal); }
+      ajusta(gal);
+    }
+  }
+  if (galleryMotion.addEventListener) { galleryMotion.addEventListener('change', galleryPreferenceChanged); }
+  else if (galleryMotion.addListener) { galleryMotion.addListener(galleryPreferenceChanged); }
 
   var canDialog = typeof window.HTMLDialogElement === 'function' && typeof window.HTMLDialogElement.prototype.showModal === 'function';
   if (canDialog) { document.documentElement.classList.add('tem-dialog'); }
