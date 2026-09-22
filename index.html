@@ -16,12 +16,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="preload" href="assets/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="assets/css/siteflux.css?v=2.27.0" />
+<link rel="stylesheet" href="assets/css/siteflux.css?v=2.28.0" />
 <link rel="stylesheet" href="assets/css/siteflux-personalidade.css?v=2.26.0" />
 <!-- Intro: só marca a página quando a abertura vai mesmo rodar (1x por sessão, sem hash, sem movimento reduzido, aba visível) -->
 <script>(function(){try{if(sessionStorage.getItem("sf-intro")||location.hash||document.hidden||matchMedia("(prefers-reduced-motion: reduce)").matches)return;document.documentElement.classList.add("intro-active")}catch(e){}})();</script>
-<script src="assets/js/siteflux.js?v=2.26.0" defer></script>
-<script src="assets/js/siteflux-personalidade.js?v=2.23.0" defer></script>
+<script src="assets/js/siteflux.js?v=2.28.0" defer></script>
+<script src="assets/js/siteflux-personalidade.js?v=2.28.0" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -274,9 +274,10 @@
                 <span class="device-url" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M17 9V7A5 5 0 0 0 7 7v2H5v12h14V9Zm-8 0V7a3 3 0 0 1 6 0v2Z"/></svg><span class="device-url-text">suaempresa.com.br</span></span>
                 <span class="device-tools">
                   <span class="device-seg" role="group" aria-label="Tipo de site" data-kinds>
-                    <button type="button" data-kind="landing" aria-pressed="true">Landing page</button>
-                    <button type="button" data-kind="loja" aria-pressed="false">E-commerce</button>
-                    <button type="button" data-kind="site" aria-pressed="false">Institucional</button>
+                    <!-- em telas até 380 px o rótulo visível encurta (Landing · Loja · Institucional); o nome completo fica no aria-label -->
+                    <button type="button" data-kind="landing" aria-pressed="true" aria-label="Landing page"><span class="lbl-long">Landing page</span><span class="lbl-short">Landing</span></button>
+                    <button type="button" data-kind="loja" aria-pressed="false" aria-label="E-commerce (loja)"><span class="lbl-long">E-commerce</span><span class="lbl-short">Loja</span></button>
+                    <button type="button" data-kind="site" aria-pressed="false" aria-label="Institucional">Institucional</button>
                   </span>
                   <span class="device-seg device-seg--view" role="group" aria-label="Visualização" data-views>
                     <button type="button" data-view="web" aria-pressed="true" aria-label="Ver no computador"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 5h18v11H3zM9 20h6M12 16v4"/></svg></button>

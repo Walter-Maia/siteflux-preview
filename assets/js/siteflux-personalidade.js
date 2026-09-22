@@ -103,6 +103,15 @@
     g.ampliar.addEventListener('click', function () { setZoom(!g.tela.classList.contains('is-zoom')); });
     d.addEventListener('keydown', function (e) {
       if (e.altKey || e.ctrlKey || e.metaKey) { return; }
+      if (e.key === 'Tab') {
+        // o Tab circula dentro do diálogo (sem isso o navegador leva o foco para a própria interface por um instante)
+        var foco = Array.prototype.filter.call(d.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])'), function (el) { return !el.disabled && !el.hidden && el.getClientRects().length; });
+        if (foco.length) {
+          if (e.shiftKey && document.activeElement === foco[0]) { e.preventDefault(); foco[foco.length - 1].focus(); }
+          else if (!e.shiftKey && document.activeElement === foco[foco.length - 1]) { e.preventDefault(); foco[0].focus(); }
+        }
+        return;
+      }
       if (e.key === 'ArrowRight') { go(g.index + 1); e.preventDefault(); }
       else if (e.key === 'ArrowLeft') { go(g.index - 1); e.preventDefault(); }
       else if (e.key === 'Home') { go(0); e.preventDefault(); }

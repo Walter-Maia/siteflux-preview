@@ -121,7 +121,21 @@
   if (toggle && nav) {
     toggle.addEventListener('click', function () { setMenu(!menuIsOpen(), false); });
     nav.addEventListener('click', function (e) {
-      if (e.target.closest('a')) setMenu(false, false);
+      var a = e.target.closest('a');
+      if (!a) return;
+      setMenu(false, false);
+      // link para uma seção: o foco vai junto (leitores de tela seguem dali; o Tab seguinte continua na seção)
+      var alvo = /^#./.test(a.getAttribute('href') || '') ? document.querySelector(a.getAttribute('href')) : null;
+      if (alvo) { if (!alvo.hasAttribute('tabindex')) alvo.setAttribute('tabindex', '-1'); alvo.focus({ preventScroll: true }); }
+    });
+    // cortina aberta = modal: o Tab circula entre o botão de fechar e os links (a logo e o CTA do topo ficam ocultos)
+    document.querySelector('.header').addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab' || !menuIsOpen()) return;
+      var links = Array.prototype.filter.call(nav.querySelectorAll('a'), function (a) { return a.offsetParent !== null || a.getClientRects().length; });
+      var last = links[links.length - 1];
+      if (!last) return;
+      if (!e.shiftKey && e.target === last) { e.preventDefault(); toggle.focus(); }
+      else if (e.shiftKey && e.target === toggle) { e.preventDefault(); last.focus(); }
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && menuIsOpen()) setMenu(false, true);
@@ -483,10 +497,11 @@
     var sec = document.querySelector('[data-story]');
     if (!sec) return;
     var pin = sec.querySelector('.story-pin');
+    var stage = sec.querySelector('.story-stage');
     var card = sec.querySelector('.device');
     var screen = sec.querySelector('.device-screen');
     var tracks = Array.prototype.slice.call(sec.querySelectorAll('.device-track'));
-    if (!pin || !card || !screen || !tracks.length) return;
+    if (!pin || !stage || !card || !screen || !tracks.length) return;
     var captions = Array.prototype.slice.call(sec.querySelectorAll('.story-caption li'));
     var balloons = Array.prototype.slice.call(sec.querySelectorAll('.balloon'));
     var track = tracks[0], blocks = [], STEPS = 0;
@@ -561,6 +576,15 @@
     }
     function sync() {
       var want = fits();
+      // a história só vale se o palco inteiro (topo, tablet e legenda) couber na janela; senão (ex.: 390 × 480, paisagem
+      // num celular) a seção rola normalmente, sem o tablet ficar preso por baixo do cabeçalho
+      if (want) {
+        if (!on) sec.classList.add('is-story');
+        var cs = window.getComputedStyle(stage), fig = card.parentNode, cap = sec.querySelector('.story-caption');
+        var precisa = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.rowGap) || 0) + fig.offsetHeight + (cap ? cap.offsetHeight : 0);
+        // compara com o próprio palco (100svh) e tolera uns px, como a versão anterior tolerava sem avisar
+        if (precisa > stage.clientHeight + 24) { want = false; if (!on) sec.classList.remove('is-story'); }
+      }
       if (want !== on) {
         on = want;
         sec.classList.toggle('is-story', on);
@@ -591,7 +615,7 @@
         if (balloons[i]) balloons[i].lastChild.nodeValue = c[0];
         if (captions[i]) { captions[i].querySelector('h3').textContent = c[0]; captions[i].querySelector('p').textContent = c[1]; }
       });
-      if (on) { measure(); update(); }
+      sync(); // a legenda do novo tipo pode ter outra altura: reavalia se a história cabe
     }
     function press(group, btn) {
       Array.prototype.forEach.call(group.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });

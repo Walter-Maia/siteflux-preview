@@ -52,7 +52,8 @@ img, svg { display: block; max-width: 100%; }
 img { height: auto; }
 a { color: inherit; }
 
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+:focus-visible:not(section) { border-radius: 6px; } /* a seção focada por um link do menu mantém o próprio raio */
 .on-dark { --focus: var(--sf-lime); }
 
 .sr-only {
@@ -179,7 +180,9 @@ html.js .menu-toggle { display: inline-flex; }
 .header .logo.is-pulse { animation: sf-logo-pulse .5s ease; }
 @keyframes sf-logo-pulse { 30% { transform: scale(1.08); } }
 /* com a cortina aberta somem o botão e a logo do topo: só o X fica */
-html.menu-open .header .logo, html.menu-open .header-cta { opacity: 0; pointer-events: none; }
+html.menu-open .header .logo, html.menu-open .header-cta { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .25s ease, visibility 0s .25s; } /* visibility: também saem do percurso do Tab */
+/* seção que recebe o foco ao chegar por um link do menu (tabindex="-1" via JS): sem contorno em volta da seção inteira */
+section:focus { outline: none; }
 html.menu-open { overflow: hidden; }
 
 /* sem JS: lista simples sob o topo */
@@ -365,6 +368,7 @@ html.intro-active, html.intro-leaving { --rise-start: 2.4s; }
 .about { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(36px, 5vw, 88px); align-items: start; }
 .about .h2 { font-size: clamp(28px, 3.4vw, 46px); }
 .about-copy p { margin-top: 20px; max-width: 52ch; }
+@media (max-width: 560px) { .about { grid-template-columns: 1fr; gap: 28px; } } /* uma coluna: em 320–390 px o título ficava com uma palavra por linha */
 .pillars { display: grid; gap: 0; }
 .pillars li { display: grid; grid-template-columns: auto 1fr; gap: 6px 22px; padding: 24px 0; border-top: 2px solid rgba(4, 43, 32, .22); }
 .pillars li:last-child { border-bottom: 2px solid rgba(4, 43, 32, .22); }
@@ -426,7 +430,7 @@ html.intro-active, html.intro-leaving { --rise-start: 2.4s; }
 @media (max-width: 900px) { .offer-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .offer-list { grid-template-columns: 1fr; } }
 
-.device-fig { position: relative; width: 100%; max-width: 1080px; margin: 0; }
+.device-fig { position: relative; width: 100%; max-width: 1080px; margin: 0; container: device / inline-size; } /* a barra de controles se adapta à largura do tablet (não só da janela) */
 .device { position: relative; border-radius: 30px; background: var(--sf-dark); padding: clamp(12px, 1.4vw, 18px) clamp(14px, 1.8vw, 24px) clamp(16px, 2vw, 26px); box-shadow: 0 9px 20px rgba(4, 43, 32, .2), 0 37px 37px rgba(4, 43, 32, .16), 0 84px 50px rgba(4, 43, 32, .08); }
 .device-bar { display: flex; align-items: center; gap: 12px; margin-bottom: clamp(10px, 1.2vw, 16px); min-height: 30px; }
 .device-dots { display: inline-flex; gap: 6px; flex: none; }
@@ -544,6 +548,40 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   .device-bar { flex-wrap: wrap; }
   html.js .device-tools { order: 3; flex: 1 1 100%; justify-content: space-between; }
   .device-seg button { padding: 0 11px; font-size: 11.5px; }
+}
+/* telas estreitas: os dois grupos viram itens da barra (display: contents) — a visualização fica na linha do endereço e o
+   tipo de site ocupa a linha inteira, com os três botões dividindo a largura. Sem isso a barra não encolhia abaixo de
+   ~370 px e empurrava o tablet para fora da página (rolagem lateral em 320–390 px). Botões mais altos para o toque. */
+.lbl-short { display: none; }
+@media (max-width: 700px) {
+  html.js .device-tools { display: contents; }
+  .device-seg--view { margin-left: auto; }
+  .device-seg[data-kinds] { order: 3; flex: 1 1 100%; min-width: 0; }
+  .device-seg[data-kinds] button { flex: 1 1 auto; min-width: 0; padding: 0 6px; }
+  .device-seg button { min-height: 34px; }
+  .story-stage, .device-fig, .device { min-width: 0; }
+}
+/* até 380 px os três rótulos completos (~270 px) não cabem na tela do tablet (~230 px): dois encurtam e os pontos da janela somem */
+@media (max-width: 380px) {
+  .lbl-long { display: none; }
+  .lbl-short { display: inline; }
+  .device-dots { display: none; }
+}
+/* as mesmas regras pela largura do próprio tablet: em janela larga e baixa (ex.: 932 × 430, celular deitado) o tablet
+   tem só ~380 px, a janela passa dos 900 px e a barra estourava para fora do aparelho */
+@container device (max-width: 640px) {
+  .device-bar { flex-wrap: wrap; }
+  .device-seg button { padding: 0 11px; font-size: 11.5px; }
+  html.js .device-tools { display: contents; }
+  .device-seg--view { margin-left: auto; }
+  .device-seg[data-kinds] { order: 3; flex: 1 1 100%; min-width: 0; }
+  .device-seg[data-kinds] button { flex: 1 1 auto; min-width: 0; padding: 0 6px; }
+  .device-seg button { min-height: 34px; }
+}
+@container device (max-width: 330px) {
+  .lbl-long { display: none; }
+  .lbl-short { display: inline; }
+  .device-dots { display: none; }
 }
 
 /* a "janela" mantém a proporção; dentro dela a tela ocupa tudo (computador) ou vira a coluna de um celular */
@@ -772,10 +810,15 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   .story.is-story .device-fig { width: min(100%, max(380px, calc((100vh - 270px) * 1.89 + 48px))); }
 }
 @media (max-width: 700px) {
-  .story.is-story .story-stage { padding-top: 88px; }
+  .story.is-story .story-stage { padding-top: calc(var(--hd-h) + var(--hd-top) + 2px); } /* logo abaixo da caixa do topo (70 + 16 px nesta largura) */
   .story.is-story .device-fig { width: 100%; }
   .story.is-story .device-view { aspect-ratio: auto; height: clamp(200px, min(100svh - 380px, 96vw), 640px); }
   .story.is-story .story-caption { min-height: 104px; }
+}
+/* estreita e baixa: tela e legenda mais compactas; se mesmo assim o conjunto não couber, o JS solta a história */
+@media (max-width: 700px) and (max-height: 600px) {
+  .story.is-story .device-view { height: clamp(170px, min(100svh - 380px, 96vw), 640px); }
+  .story.is-story .story-caption { min-height: 88px; }
 }
 @media print { .story.is-story .story-pin { height: auto; } .story.is-story .story-stage { position: static; height: auto; } }
 
