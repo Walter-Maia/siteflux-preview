@@ -272,18 +272,23 @@ main { max-width: var(--sf-max); margin: 0 auto; }
 .band--beige { background: var(--sf-beige); }
 /* seção editorial direto sobre o lima, sem caixa */
 .editorial { --surface: var(--sf-lime); }
-.editorial .eyebrow::before { background: var(--sf-dark); }
 .box--dark { background: var(--sf-dark); color: #fff; }
 .box--blue { background: var(--sf-blue); }
 .box--beige { background: var(--sf-beige); }
 .box--white { background: var(--sf-white); }
 
+/* 2.34: o selo de cada seção deixou de ser bolinha + caixa alta (pedido do Walter: tinha "cara de I.A.").
+   Agora é o índice da seção, um fio de separação e o nome em caixa normal — hierarquia no lugar de enfeite.
+   A cor vem do texto da seção (currentColor), então não precisa de exceção por fundo. */
 .eyebrow {
-  display: inline-flex; align-items: center; gap: 10px;
-  font-size: 13.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 12px;
+  font-size: 14.5px; font-weight: 600; letter-spacing: 0; text-transform: none;
 }
-.eyebrow::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--sf-blue); flex: none; }
-.open .eyebrow::before, .box--blue .eyebrow::before { background: var(--sf-dark); }
+.eyebrow[data-num]::before {
+  content: attr(data-num); flex: none; padding-right: 12px;
+  font-size: 12.5px; font-weight: 800; letter-spacing: .06em; font-variant-numeric: tabular-nums;
+  opacity: .6; border-right: 1.5px solid currentColor; border-right-color: color-mix(in srgb, currentColor 30%, transparent);
+}
 .h2 {
   font-family: var(--font-display);
   font-size: clamp(32px, 4.6vw, 60px); font-weight: 600; line-height: 1.04; letter-spacing: -.025em;
@@ -901,25 +906,28 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
    hover ficam no .plan-inner para não brigar com o transform do data-reveal. */
 .plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(14px, 1.4vw, 22px); align-items: stretch; }
 .plan { display: flex; container-type: inline-size; }
+/* --realce: a cor do contorno de hover/foco sai do PRÓPRIO cartão (pedido do Walter), não um azul para todos */
 .plan-inner {
   --cap: var(--sf-beige); --ink: var(--sf-dark); --soft: rgba(4, 43, 32, .72); --rule: rgba(4, 43, 32, .28); --pad: clamp(16px, 7cqi, 26px);
+  --realce: var(--sf-dark); /* fluxStart: branco e bege — o verde-escuro do próprio texto */
   display: flex; flex-direction: column; width: 100%; padding: 8px 8px var(--pad);
   border-radius: var(--radius-lg); background: var(--sf-white); color: var(--ink);
   box-shadow: 0 18px 36px -22px rgba(4, 43, 32, .45);
   transition: transform .5s var(--ease), box-shadow .28s cubic-bezier(.65, 0, .35, 1);
 }
 /* fluxGo e Personalizado: o corpo do cartão é o tom da própria capa diluído em branco (lima e azul da marca) */
-.plan:nth-child(2) .plan-inner { --cap: var(--sf-lime); background: #f4f7dc; background: color-mix(in srgb, var(--sf-lime) 24%, #fff); }
-.plan--focus .plan-inner { --cap: #0a4a38; --ink: #fff; --soft: rgba(255, 255, 255, .78); --rule: rgba(255, 255, 255, .3); background: var(--sf-dark); box-shadow: 0 26px 44px -22px rgba(4, 43, 32, .7); }
-.plan--custom .plan-inner { --cap: var(--sf-blue); --rule: rgba(4, 43, 32, .34); background: #e0f4f8; background: color-mix(in srgb, var(--sf-blue) 18%, #fff); }
-.plan:focus-within .plan-inner { box-shadow: 0 18px 36px -22px rgba(4, 43, 32, .45), 0 0 0 2px var(--sf-blue); }
+/* o lima do cartão puro sumiria no fundo lima da seção: o realce é o mesmo lima puxado para o verde-escuro */
+.plan:nth-child(2) .plan-inner { --cap: var(--sf-lime); --realce: #6c8542; --realce: color-mix(in srgb, var(--sf-lime) 52%, var(--sf-dark)); background: #f4f7dc; background: color-mix(in srgb, var(--sf-lime) 24%, #fff); }
+.plan--focus .plan-inner { --cap: #0a4a38; --realce: #0a4a38; --ink: #fff; --soft: rgba(255, 255, 255, .78); --rule: rgba(255, 255, 255, .3); background: var(--sf-dark); box-shadow: 0 26px 44px -22px rgba(4, 43, 32, .7); } /* fluxPro: o verde da própria capa */
+.plan--custom .plan-inner { --cap: var(--sf-blue); --realce: var(--sf-blue); --rule: rgba(4, 43, 32, .34); background: #e0f4f8; background: color-mix(in srgb, var(--sf-blue) 18%, #fff); } /* Personalizado: segue azul */
+.plan:focus-within .plan-inner { box-shadow: 0 18px 36px -22px rgba(4, 43, 32, .45), 0 0 0 2px var(--realce); }
 .plan:focus-within .plan-mark { opacity: .18; }
 .plan--focus:focus-within .plan-mark { opacity: .3; }
 /* hover (pedido do Walter, de volta na 2.32): o cartão sobe um pouco e o globo da marca gira e cresce; o contorno azul e o
    realce do globo (2.31) continuam, e o mesmo realce vale no foco por teclado */
 @media (hover: hover) and (pointer: fine) {
-  .plan:hover .plan-inner { transform: translateY(-8px); box-shadow: 0 34px 48px -24px rgba(4, 43, 32, .5), 0 0 0 2px var(--sf-blue); }
-  .plan--focus:hover .plan-inner { box-shadow: 0 34px 48px -24px rgba(4, 43, 32, .7), 0 0 0 2px var(--sf-blue); }
+  .plan:hover .plan-inner { transform: translateY(-8px); box-shadow: 0 34px 48px -24px rgba(4, 43, 32, .5), 0 0 0 2px var(--realce); }
+  .plan--focus:hover .plan-inner { box-shadow: 0 34px 48px -24px rgba(4, 43, 32, .7), 0 0 0 2px var(--realce); }
   .plan:hover .plan-mark { opacity: .18; transform: rotate(-8deg) scale(1.06); }
   .plan--focus:hover .plan-mark { opacity: .3; }
 }

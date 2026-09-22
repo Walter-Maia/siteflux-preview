@@ -139,50 +139,53 @@
    Tela cheia nas cores do próprio site (--g-* copiadas do <li>). Primeiro o trabalho: a tela ocupa a maior parte e forma um
    conjunto só com legenda, setas e miniaturas; o texto é curto. Um índice só governa tela, miniatura, contador e legenda,
    e eles só mudam quando a imagem nova realmente aparece. */
+html.tem-dialog { scrollbar-gutter: stable; } /* abrir/fechar não redimensiona toda a landing */
 html.galeria-aberta { overflow: hidden; }
 .galeria {
   --g-bg: #063326; --g-soft: #0f5643; --g-fg: #fff; --g-mut: rgba(255, 255, 255, .78); --g-acc: var(--sf-lime); --g-line: rgba(255, 255, 255, .22);
   position: fixed; inset: 0; width: 100vw; max-width: none; height: 100vh; height: 100dvh; max-height: none;
   margin: 0; padding: 0; border: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
-  background: var(--g-bg); color: var(--g-fg); --focus: var(--g-acc);
-  font-family: inherit;
+  background: transparent; color: var(--g-fg); --focus: var(--g-acc);
+  font-family: inherit; contain: layout style;
 }
-.galeria::backdrop { background: var(--g-bg, #063326); }
-/* 2.31: entrada e saída limpas — fade curto com leve escala; o fundo escuro entra junto */
-.galeria[open] { animation: galeria-entra .32s cubic-bezier(.2, .8, .2, 1) both; }
-.galeria[open]::backdrop { animation: galeria-fundo .32s ease both; }
-.galeria.is-closing { animation: galeria-sai .2s ease both; }
-.galeria.is-closing::backdrop { animation: galeria-fundo .2s ease reverse both; }
-@keyframes galeria-entra { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
-@keyframes galeria-sai { to { opacity: 0; } }
-@keyframes galeria-fundo { from { opacity: 0; } to { opacity: 1; } }
-/* A capa e a moldura compartilham a transição; o diálogo continua sendo o destino semântico. */
-.galeria.is-morphing, .galeria.is-morphing::backdrop { background: transparent; }
-.galeria.is-morphing .galeria-moldura { opacity: 0; }
-.galeria.is-morphing .galeria-in { position: relative; z-index: 1; }
-.galeria-flight, .galeria-veil { position: fixed; pointer-events: none; transform-origin: 0 0; will-change: transform; }
-.galeria-flight { z-index: 3; overflow: hidden; }
-.galeria-flight-shot { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; }
-.galeria-veil { z-index: 0; inset: 0; background: var(--g-bg); }
+.galeria::backdrop { background: transparent; }
+.galeria-fundo { position: fixed; inset: 0; background: var(--g-bg); pointer-events: none; }
+.galeria.is-preparing .galeria-in { visibility: hidden; }
+.galeria.is-preparing .galeria-fundo { opacity: 0; }
+/* 2.34: só a moldura real se transporta; o diálogo não muda de escala. */
+.galeria-moldura { transform-origin: 0 0; }
+.galeria.is-morphing .galeria-moldura { position: relative; z-index: 3; will-change: transform; }
+.galeria.is-morphing .galeria-fundo { will-change: opacity; }
 /* 2.29 (pedido do Walter): UMA coluna centrada — topo · nome · tela principal (+ legenda) · anel giratório com uma seta de
    cada lado · descrição. Sem a fila de miniaturas nem o contador. A tela principal tem a proporção das capturas e a largura
    vem da altura da janela, para o conjunto caber sem rolar quando há altura; em janela baixa o diálogo rola normalmente. */
 .galeria-in {
+  position: relative;
   display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "topo" "titulo" "palco" "nav" "pos" "desc";
   justify-items: center; align-content: start; gap: 0;
   box-sizing: border-box; min-height: 100%; padding: clamp(12px, 1.6vw, 22px) clamp(20px, 4vw, 64px) clamp(12px, 1.6vw, 22px); /* 2.30: respiros menores — a tela principal ganha a altura */
 }
 .galeria-topo { grid-area: topo; justify-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(8px, 1vw, 12px); }
-.galeria-tipo { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--g-mut); }
-.galeria-tipo::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--g-acc); }
+/* 2.34: mesmo tratamento do selo das seções — sem bolinha e sem caixa alta; aqui não há número (é a categoria do
+   projeto), então entra um fio curto na cor do texto */
+.galeria-tipo { display: inline-flex; align-items: center; gap: 12px; min-width: 0; font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--g-mut); }
+.galeria-tipo::before { content: ''; flex: none; width: 26px; height: 2px; border-radius: 2px; background: currentColor; opacity: .55; }
 .galeria-fechar, .galeria-seta, .galeria-ampliar {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-width: 48px; min-height: 48px; padding: 0 18px; flex: none;
   border-radius: 999px; border: 1.5px solid var(--g-line); background: transparent; color: var(--g-fg);
   font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
   transition: border-color .25s ease, background-color .25s ease, color .25s ease;
 }
-.galeria-fechar:hover, .galeria-seta:hover, .galeria-ampliar:hover { border-color: var(--g-acc); background: var(--g-acc); color: var(--g-bg); }
-.galeria-fechar svg, .galeria-seta svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.galeria-seta:hover, .galeria-ampliar:hover { border-color: var(--g-acc); background: var(--g-acc); color: var(--g-bg); }
+/* 2.34: o Fechar deixa de ser uma pílula de contorno (competia com as setas redondas e ficava solta no canto):
+   vira a seta oficial da marca apontando de volta, com o rótulo ao lado em caixa normal */
+.galeria-fechar { gap: 12px; min-width: 0; padding: 0 6px 0 0; border: 0; background: transparent; color: var(--g-fg); font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.galeria-fechar .gf-seta { width: 40px; height: 40px; flex: none; fill: var(--g-acc); stroke: none; transform: rotate(180deg); transition: transform .3s var(--ease), fill .25s ease; }
+.galeria-fechar:hover { background: transparent; color: var(--g-fg); }
+.galeria-fechar:hover .gf-seta { transform: rotate(180deg) translateX(4px); fill: var(--g-fg); }
+.galeria-fechar:focus-visible { border-radius: 999px; }
+@media (prefers-reduced-motion: reduce) { .galeria-fechar .gf-seta { transition: fill .25s ease; } .galeria-fechar:hover .gf-seta { transform: rotate(180deg); } }
+.galeria-seta svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .galeria-seta { padding: 0; width: 48px; }
 
 .galeria-titulo { font-family: var(--font-display); grid-area: titulo; min-width: 0; margin-bottom: clamp(8px, 1vw, 12px); font-size: clamp(24px, 2.6vw, 40px); font-weight: 600; line-height: 1.04; letter-spacing: -.02em; text-align: center; text-wrap: balance; overflow-wrap: anywhere; }
@@ -202,7 +205,7 @@ html.galeria-aberta { overflow: hidden; }
 .galeria-tela { position: relative; aspect-ratio: 1200 / 750; background: var(--g-bg); overflow: hidden; }
 .galeria-tela img {
   position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: contain;
-  opacity: 0; transform: scale(1.02); transition: opacity .34s ease, transform .6s var(--ease);
+  opacity: 0; transform: none; transition: opacity .22s ease;
   color: var(--g-mut); font-size: 15px; line-height: 1.5; padding: 0;
 }
 .galeria-tela img.is-on { opacity: 1; transform: none; }
@@ -215,7 +218,7 @@ html.galeria-aberta { overflow: hidden; }
 /* anel com uma seta de cada lado; "Ampliar tela" (só até 899 px) numa linha própria embaixo */
 .galeria-nav { grid-area: nav; width: min(100%, calc(var(--tela-w, 960px) + 140px)); display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; grid-template-areas: "prev anel next" "amp amp amp"; align-items: center; gap: 8px 12px; margin-top: 4px; } /* as setas ficam junto ao anel, na largura da tela + folga */
 /* 2.30: "2 de 5 telas" abaixo do anel, discreto e centrado (o total vem de cada projeto) */
-.galeria-pos { grid-area: pos; min-height: 20px; margin-top: 2px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--g-mut); font-variant-numeric: tabular-nums; text-align: center; }
+.galeria-pos { grid-area: pos; min-height: 20px; margin-top: 2px; font-size: 13.5px; font-weight: 600; letter-spacing: 0; color: var(--g-mut); font-variant-numeric: tabular-nums; text-align: center; } /* 2.34: caixa normal, como o resto dos rótulos */
 /* 2.30: encaixe por altura (classes escritas pelo JS): anel compacto e, se preciso, sem a descrição */
 .galeria.is-anel-compacto .galeria-anel { --ga-w: clamp(100px, 9vw, 140px); }
 .galeria.is-anel-compacto .ga-palco { height: calc(var(--ga-w) * .86 + 30px); }
@@ -269,7 +272,9 @@ html.js .pasta-pilha { cursor: pointer; }
 .galeria-anel.is-arrastando .ga-palco { cursor: grabbing; }
 .ga-giro, .ga-painel { position: absolute; left: 50%; top: calc(100% - var(--ga-w) * .62 - 18px); width: 0; height: 0; transform-style: preserve-3d; }
 .ga-painel { left: 0; top: 0; }
-.ga-painel i { position: absolute; left: 0; top: 0; display: block; background-repeat: no-repeat; background-color: var(--g-soft); backface-visibility: visible; pointer-events: none; }
+.ga-painel i { position: absolute; left: 0; top: 0; display: block; background-repeat: no-repeat; background-color: var(--g-soft); backface-visibility: visible; transform-style: preserve-3d; pointer-events: none; }
+/* O verso tem sombra fixa: girar o anel não repinta os gradientes das 80 tiras a cada quadro. */
+.ga-painel i::after { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, .56); transform: rotateY(180deg) translateZ(.1px); backface-visibility: hidden; pointer-events: none; }
 @media (max-width: 899px) {
   .galeria-anel { --ga-w: clamp(120px, 34vw, 200px); }
   .ga-palco { height: calc(var(--ga-w) * .86 + 36px); perspective: 820px; }

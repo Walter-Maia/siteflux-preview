@@ -61,121 +61,67 @@
      se a imagem falhar ficam a última tela válida e a informação dela (a miniatura é marcada). Se nem a primeira
      carregar, a moldura traz um aviso e as miniaturas seguem disponíveis — nunca um modal vazio.
      ------------------------------------------------------------------ */
-  var ICON_X = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   var ICON_PREV = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>';
   var ICON_NEXT = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg>';
-  var SIZES = '(max-width: 899px) 92vw, 66vw';
   var gal = null;
   var galleryMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  // Uma cópia visual curta conserva inclusive o recorte de um hover interrompido.
-  // Não reutiliza classes/IDs: o carrossel e suas container queries continuam intactos.
-  var SNAP_STYLE = ('display position box-sizing top right bottom left width height min-width min-height max-width max-height margin padding border border-radius background color font text-align line-height letter-spacing overflow overflow-x overflow-y opacity visibility object-fit object-position transform transform-origin flex flex-direction flex-shrink align-items justify-content gap box-shadow z-index white-space').split(' ');
-  function gallerySnapshot(node) {
-    if (!node) { return null; }
-    var box = node.getBoundingClientRect();
-    if (box.width < 2 || box.height < 2 || box.bottom <= 0 || box.top >= innerHeight) { return null; }
-    // A capa pode ser clicada enquanto ainda assenta no carrossel (rotação até 3°).
-    var angle = 0, ancestor = node;
-    if (window.DOMMatrixReadOnly) {
-      while (ancestor && ancestor.nodeType === 1) {
-        var transform = getComputedStyle(ancestor).transform;
-        if (transform !== 'none') {
-          var matrix = new DOMMatrixReadOnly(transform);
-          angle += Math.atan2(matrix.b, matrix.a);
-        }
-        ancestor = ancestor.parentElement;
-      }
-    }
-    if (Math.abs(angle) > .0001 && Math.abs(angle) < .35) {
-      var cosine = Math.abs(Math.cos(angle)), sine = Math.abs(Math.sin(angle)), determinant = cosine * cosine - sine * sine;
-      var unrotatedW = (box.width * cosine - box.height * sine) / determinant;
-      var unrotatedH = (box.height * cosine - box.width * sine) / determinant;
-      box = { left: box.left + (box.width - unrotatedW) / 2, top: box.top + (box.height - unrotatedH) / 2, width: unrotatedW, height: unrotatedH };
-    } else { angle = 0; }
-    var copy = node.cloneNode(true), originals = [node].concat(Array.prototype.slice.call(node.querySelectorAll('*')));
-    var copies = [copy].concat(Array.prototype.slice.call(copy.querySelectorAll('*')));
-    originals.forEach(function (item, i) {
-      var clone = copies[i], cs = getComputedStyle(item);
-      clone.removeAttribute('class'); clone.removeAttribute('id'); clone.removeAttribute('style');
-      clone.removeAttribute('tabindex'); clone.setAttribute('aria-hidden', 'true');
-      SNAP_STYLE.forEach(function (key) { clone.style.setProperty(key, cs.getPropertyValue(key)); });
-      clone.style.transition = 'none'; clone.style.animation = 'none'; clone.style.pointerEvents = 'none';
-      if (item.tagName === 'IMG') {
-        clone.removeAttribute('srcset'); clone.removeAttribute('sizes');
-        var imageSource = item.currentSrc || item.getAttribute('src');
-        if (imageSource) { clone.src = imageSource; } else { clone.removeAttribute('src'); }
-        clone.alt = ''; clone.loading = 'eager';
-      }
-      // Uma captura ampliada pode estar rolada nos dois eixos.
-      if (item.scrollLeft || item.scrollTop) {
-        Array.prototype.forEach.call(clone.children, function (child) {
-          child.setAttribute('data-snapshot-scroll', item.scrollLeft + ',' + item.scrollTop);
-        });
-      }
-      var scroll = clone.getAttribute('data-snapshot-scroll');
-      if (scroll) {
-        var xy = scroll.split(',');
-        clone.style.transform = 'translate(' + (-Number(xy[0])) + 'px,' + (-Number(xy[1])) + 'px) ' + (cs.transform === 'none' ? '' : cs.transform);
-        clone.removeAttribute('data-snapshot-scroll');
-      }
-    });
-    var width = node.offsetWidth || box.width, height = node.offsetHeight || box.height;
-    copy.style.position = 'absolute'; copy.style.left = '0'; copy.style.top = '0';
-    copy.style.right = 'auto'; copy.style.bottom = 'auto'; copy.style.margin = '0';
-    copy.style.width = width + 'px'; copy.style.height = height + 'px';
-    copy.style.minWidth = '0'; copy.style.maxWidth = 'none'; copy.style.minHeight = '0'; copy.style.maxHeight = 'none';
-    copy.style.transformOrigin = '0 0'; copy.style.transform = 'scale(' + box.width / width + ',' + box.height / height + ')';
-    copy.style.visibility = 'visible'; copy.style.opacity = '1';
-    return { node: copy, box: box, angle: angle * 180 / Math.PI, radius: getComputedStyle(node).borderRadius };
+  // FLIP da moldura real: nenhuma cópia de DOM, imagem ou estilo no clique.
+  function coverBounds(node) {
+    if (!node || !node.isConnected) { return null; }
+    var r = node.getBoundingClientRect();
+    return r.width > 2 && r.height > 2 && r.bottom > 0 && r.top < innerHeight ? r : null;
   }
-
+  function cancelGalleryPreparation(g) {
+    if (g.prepareFrame) { cancelAnimationFrame(g.prepareFrame); g.prepareFrame = 0; }
+    g.prepare = null; g.el.classList.remove('is-preparing');
+  }
+  function finishGalleryPreparation(g, immediate) {
+    var prepare = g.prepare;
+    cancelGalleryPreparation(g);
+    if (prepare && g.el.open) { prepare(immediate); }
+  }
   function clearGalleryFlight(g) {
+    cancelGalleryPreparation(g);
     var m = g.motion;
     if (!m) { return; }
     g.motion = null;
     m.animations.forEach(function (a) { a.onfinish = null; a.cancel(); });
-    m.flight.remove(); m.veil.remove();
     g.el.classList.remove('is-morphing', 'is-closing');
     if (m.source) { m.source.style.visibility = m.visibility; }
   }
 
   function settleGalleryFlight(g) {
+    if (g && g.prepare) { finishGalleryPreparation(g, true); return; }
     if (!g || !g.motion) { return; }
     var closing = g.motion.closing;
     clearGalleryFlight(g);
     if (closing && g.el.open) { g.el.close(); }
+    else if (g.el.open && g.onEntered) { var entered = g.onEntered; g.onEntered = null; entered(); }
   }
 
-  var VOO_GALERIA = false; // 2.31: abertura/fechamento por fade curto (pedido do Walter: 'mais clean'); o voo da capa fica desligado
-  function flyGallery(g, from, to, closing, backdropFrom) {
-    if (!VOO_GALERIA || !from || !to || galleryMotion.matches || !Element.prototype.animate) { return false; }
-    var flight = el('div', 'galeria-flight'), veil = el('div', 'galeria-veil');
-    flight.setAttribute('aria-hidden', 'true'); veil.setAttribute('aria-hidden', 'true');
-    flight.style.cssText = 'left:' + from.box.left + 'px;top:' + from.box.top + 'px;width:' + from.box.width + 'px;height:' + from.box.height + 'px;border-radius:' + from.radius;
-    var finalShot = el('div', 'galeria-flight-shot');
-    finalShot.style.width = to.box.width + 'px'; finalShot.style.height = to.box.height + 'px';
-    finalShot.style.transform = 'scale(' + from.box.width / to.box.width + ',' + from.box.height / to.box.height + ')';
-    finalShot.appendChild(to.node); flight.appendChild(from.node); flight.appendChild(finalShot);
-    var source = g.sourceElement;
-    var m = g.motion = { flight: flight, veil: veil, closing: closing, animations: [], source: source, visibility: source ? source.style.visibility : '' };
+  function flyGallery(g, bounds, closing) {
+    if (galleryMotion.matches || !g.moldura.animate) { clearGalleryFlight(g); return false; }
+    // Reads precede writes. An interrupted opening retargets the live matrix.
+    var current = getComputedStyle(g.moldura).transform;
+    var shade = closing ? getComputedStyle(g.fundo).opacity : '0';
+    var chrome = closing ? g.chrome.map(function (node) { return getComputedStyle(node).opacity; }) : [];
+    clearGalleryFlight(g);
+    var target = g.moldura.getBoundingClientRect();
+    if (!target.width || !target.height) { return false; }
+    var transported = bounds ? 'translate3d(' + (bounds.left - target.left) + 'px,' + (bounds.top - target.top) + 'px,0) scale(' + bounds.width / target.width + ',' + bounds.height / target.height + ')' : 'scale(.985)';
+    var source = bounds ? g.sourceElement : null;
+    var m = g.motion = { closing: closing, animations: [], source: source, visibility: source ? source.style.visibility : '' };
     g.el.classList.add('is-morphing'); g.el.classList.toggle('is-closing', closing);
-    g.el.appendChild(veil); g.el.appendChild(flight);
     if (source) { source.style.visibility = 'hidden'; }
-    var duration = closing ? (innerWidth <= 760 ? 420 : 500) : (innerWidth <= 760 ? 650 : 900);
-    var options = { duration: duration, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'both' };
-    function animate(node, frames, timing) { var a = node.animate(frames, timing || options); m.animations.push(a); return a; }
-    function frame(r, angle) {
-      return 'translate(' + (r.left - from.box.left + r.width / 2) + 'px,' + (r.top - from.box.top + r.height / 2) + 'px) rotate(' + (angle || 0) + 'deg) scale(' + r.width / from.box.width + ',' + r.height / from.box.height + ') translate(' + (-from.box.width / 2) + 'px,' + (-from.box.height / 2) + 'px)';
+    var duration = bounds ? (closing ? 300 : (innerWidth <= 760 ? 360 : 420)) : 160;
+    function animate(node, frames, ms, delay) {
+      var a = node.animate(frames, { duration: ms || duration, delay: delay || 0, easing: closing ? 'cubic-bezier(.4,0,.25,1)' : 'cubic-bezier(.22,.8,.25,1)', fill: 'both' });
+      m.animations.push(a); return a;
     }
-    var main = animate(flight, [{ transform: frame(from.box, from.angle) }, { transform: frame(to.box, to.angle) }]);
-    // As superfícies trocam dentro da mesma janela: nunca se apaga a capa para abrir outro modal.
-    animate(finalShot, [{ opacity: 0, offset: 0 }, { opacity: 0, offset: .55 }, { opacity: 1, offset: .9 }, { opacity: 1 }]);
-    animate(from.node, [{ opacity: 1, offset: 0 }, { opacity: 1, offset: .55 }, { opacity: 0, offset: .9 }, { opacity: 0 }]);
-    var whole = { left: 0, top: 0, width: innerWidth, height: innerHeight };
-    function plane(r) { return 'translate(' + r.left + 'px,' + r.top + 'px) scale(' + r.width / innerWidth + ',' + r.height / innerHeight + ')'; }
-    animate(veil, [{ transform: plane(backdropFrom || (closing ? whole : from.box)), borderRadius: closing ? '0px' : from.radius }, { transform: plane(closing ? to.box : whole), borderRadius: closing ? to.radius : '0px' }]);
-    animate(g.dentro, closing ? [{ opacity: 1 }, { opacity: 0, offset: .4 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 0, offset: .4 }, { opacity: 1 }]);
+    var main = animate(g.moldura, closing ? [{ transform: current, opacity: 1 }, { transform: transported, opacity: bounds ? 1 : 0 }] : [{ transform: transported, opacity: bounds ? 1 : 0 }, { transform: 'none', opacity: 1 }]);
+    animate(g.fundo, [{ opacity: shade }, { opacity: closing ? 0 : 1 }], closing ? duration : Math.min(240, duration));
+    g.chrome.forEach(function (node, i) { animate(node, [{ opacity: closing ? chrome[i] : 0 }, { opacity: closing ? 0 : 1 }], closing ? 100 : 180, closing ? 0 : 50); });
     main.onfinish = function () { if (g.motion === m) { settleGalleryFlight(g); } };
     return true;
   }
@@ -196,8 +142,10 @@
     d.className = 'galeria';
     d.setAttribute('aria-labelledby', 'galeria-titulo');
     d.innerHTML =
+      '<div class="galeria-fundo" aria-hidden="true"></div>' +
       '<div class="galeria-in">' +
-        '<div class="galeria-topo"><p class="galeria-tipo"></p><button class="galeria-fechar" type="button">Fechar' + ICON_X + '</button></div>' +
+        // 2.34: sair da galeria é "voltar aos projetos" — a seta oficial da marca girada, e "Fechar" em caixa normal
+        '<div class="galeria-topo"><p class="galeria-tipo"></p><button class="galeria-fechar" type="button"><svg class="gf-seta" viewBox="0 0 204.42 204.42" aria-hidden="true" focusable="false"><use href="#sf-seta"></use></svg>Fechar</button></div>' +
         '<h3 class="galeria-titulo" id="galeria-titulo"></h3>' +
         /* 2.29 (pedido do Walter): tela principal centrada → anel giratório embaixo, com uma seta de cada lado → descrição.
            Sem a fila de miniaturas nem o contador numérico; a legenda curta da tela fica sob a moldura. */
@@ -219,6 +167,7 @@
       pos: d.querySelector('.galeria-pos'), nav: d.querySelector('.galeria-nav'), conta: d.querySelector('.galeria-conta'), topo: d.querySelector('.galeria-topo'),
       layers: d.querySelectorAll('.galeria-tela img'), palco: d.querySelector('.galeria-palco'), tela: d.querySelector('.galeria-tela'), moldura: d.querySelector('.galeria-moldura'),
       aviso: d.querySelector('.galeria-aviso'), ampliar: d.querySelector('.galeria-ampliar'),
+      fundo: d.querySelector('.galeria-fundo'), chrome: Array.prototype.slice.call(d.querySelectorAll('.galeria-topo, .galeria-titulo, .galeria-conta, .galeria-nav, .galeria-pos, .galeria-desc')),
       slides: [], index: -1, shown: -1, front: 0, token: 0, opener: null, sourceElement: null, motion: null,
       anel: { box: d.querySelector('.galeria-anel'), palco: d.querySelector('.ga-palco'), giro: d.querySelector('.ga-giro'), regua: d.querySelector('.ga-regua'), paineis: [], n: 0, R: 0, ang: 0, alvo: 0, raf: 0, drag: null }
     };
@@ -231,7 +180,7 @@
     d.addEventListener('keydown', function (e) {
       if (e.altKey || e.ctrlKey || e.metaKey) { return; }
       if (e.key === 'Tab') {
-        if (g.motion && !g.motion.closing) { settleGalleryFlight(g); }
+        if (g.prepare || (g.motion && !g.motion.closing)) { settleGalleryFlight(g); }
         // o Tab circula dentro do diálogo (sem isso o navegador leva o foco para a própria interface por um instante)
         var foco = Array.prototype.filter.call(d.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])'), function (el) { return !el.disabled && !el.hidden && el.getClientRects().length; });
         if (foco.length) {
@@ -247,18 +196,27 @@
     });
     d.addEventListener('cancel', function (e) { e.preventDefault(); closeGallery(); }); // Esc passa pela mesma saída
     d.addEventListener('close', function () {
+      g.onEntered = null;
       clearGalleryFlight(g);
-      if (g.anel.raf) { cancelAnimationFrame(g.anel.raf); g.anel.raf = 0; }
+      ringStop(g);
       g.anel.drag = null; g.anel.box.classList.remove('is-arrastando');
       g.token++;
       document.documentElement.classList.remove('galeria-aberta');
+      document.documentElement.style.backgroundColor = g.rootBackground || '';
+      document.dispatchEvent(new Event('siteflux:galleryclose'));
       d.classList.remove('is-closing');
       setZoom(false);
-      if (g.opener && g.opener.focus) {
-        g.opener.focus({ preventScroll: true });
-        var focusBox = g.opener.getBoundingClientRect();
-        // Um resize pode reposicionar as seções atrás do diálogo; o foco de retorno precisa continuar visível.
-        if (focusBox.top < 0 || focusBox.bottom > innerHeight) { g.opener.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' }); }
+      var focusTarget = g.opener;
+      if (focusTarget && (document.activeElement !== focusTarget || g.needsReturnMeasure)) {
+        // O diálogo normalmente já devolveu o foco. Só resize ou clique na capa exigem ajuste.
+        requestAnimationFrame(function () {
+          if (g.el.open || g.opener !== focusTarget || !focusTarget.isConnected) { return; }
+          if (document.activeElement !== focusTarget) { focusTarget.focus({ preventScroll: true }); }
+          if (g.needsReturnMeasure) {
+            var focusBox = focusTarget.getBoundingClientRect();
+            if (focusBox.top < 0 || focusBox.bottom > innerHeight) { focusTarget.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' }); }
+          }
+        });
       }
     });
     // swipe horizontal na tela; o gesto vertical continua rolando a galeria (touch-action: pan-y). Ampliada, o arrasto é do zoom.
@@ -294,33 +252,45 @@
      ------------------------------------------------------------------ */
   var RING_SLICES = 8;
   function ringNorm(a) { return ((a + 180) % 360 + 360) % 360 - 180; }
+  function ringStop(g) {
+    var r = g.anel;
+    if (r.raf) { cancelAnimationFrame(r.raf); r.raf = 0; }
+    r.giro.style.willChange = '';
+  }
   function ringBuild(g) {
     var r = g.anel, n = g.slides.length;
+    ringStop(g);
+    r.drag = null; r.box.classList.remove('is-arrastando');
     r.giro.textContent = ''; r.paineis = []; r.n = 0;
+    r.measuredWidth = 0; r.measuredCount = 0;
     var off = window.matchMedia('(prefers-reduced-motion: reduce)').matches || n < 2 || !('transformStyle' in document.documentElement.style);
     r.box.hidden = off;
     if (off) { return; }
     var copias = n < 8 ? 2 : 1; // poucas telas: cada uma entra duas vezes e o anel fecha redondo
     r.n = n * copias;
+    var fragment = document.createDocumentFragment();
     for (var k = 0; k < r.n; k++) {
       var sl = g.slides[k % n], painel = document.createElement('div');
       var src = (sl.srcset.split(',')[0] || sl.src).trim().split(' ')[0]; // o arquivo de 600 px basta para o anel
       painel.className = 'ga-painel';
       for (var t = 0; t < RING_SLICES; t++) {
         var tira = document.createElement('i');
-        tira.style.backgroundImage = 'linear-gradient(rgba(0,0,0,var(--d,0)),rgba(0,0,0,var(--d,0))),url("' + src + '")';
+        tira.style.backgroundImage = 'url("' + src + '")';
         painel.appendChild(tira);
       }
-      r.giro.appendChild(painel);
+      fragment.appendChild(painel);
       r.paineis.push({ el: painel, a: k * 360 / r.n });
     }
+    r.giro.appendChild(fragment);
     r.ang = 0; r.alvo = 0;
-    ringMeasure(g);
+    // As tiras são absolutas: ajusta() resolve o tamanho CSS antes da única medição.
   }
   function ringMeasure(g) {
     var r = g.anel;
     if (!r.n || r.box.hidden) { return; }
     var W = r.regua.offsetWidth || 260, gap = W * 0.07, arco = W + gap, H = W / 1.6, sw = W / RING_SLICES, porPx = 360 / (r.n * arco);
+    if (r.measuredWidth === W && r.measuredCount === r.n) { return; }
+    r.measuredWidth = W; r.measuredCount = r.n;
     r.R = r.n * arco / (2 * Math.PI);
     r.paineis.forEach(function (pn) {
       Array.prototype.forEach.call(pn.el.children, function (tira, t) {
@@ -334,32 +304,34 @@
   function ringRender(g) {
     var r = g.anel;
     r.giro.style.transform = 'translateZ(' + (-r.R).toFixed(1) + 'px) rotateX(-10deg) rotateY(' + r.ang.toFixed(3) + 'deg)';
-    r.paineis.forEach(function (pn) { // os painéis de trás escurecem
-      var c = Math.cos((pn.a + r.ang) * Math.PI / 180);
-      pn.el.style.setProperty('--d', (0.7 * (1 - (c + 1) / 2)).toFixed(3));
-    });
   }
   function ringTo(g, i) { // gira pelo caminho mais curto até a cópia mais próxima da tela i
     var r = g.anel, n = g.slides.length;
     if (!r.n || r.box.hidden) { return; }
+    ringStop(g); // retoma exatamente do último ângulo pintado, sem acumular animações
     var best = r.ang, dist = Infinity;
     for (var k = i; k < r.n; k += n) { var alvo = r.ang + ringNorm(-r.paineis[k].a - r.ang); if (Math.abs(alvo - r.ang) < dist) { dist = Math.abs(alvo - r.ang); best = alvo; } }
     r.alvo = best;
-    if (!r.raf) { r.raf = requestAnimationFrame(function passo() {
+    if (Math.abs(best - r.ang) < .05 || galleryMotion.matches) { r.ang = best; ringRender(g); return; }
+    var from = r.ang, started = performance.now(), duration = 340;
+    r.giro.style.willChange = 'transform';
+    r.raf = requestAnimationFrame(function passo(now) {
       r.raf = 0;
-      if (r.drag && r.drag.moved) { return; }
-      var falta = r.alvo - r.ang;
-      r.ang += falta * 0.14;
-      if (Math.abs(falta) < 0.05) { r.ang = r.alvo; ringRender(g); return; }
+      if (!g.el.open || (r.drag && r.drag.moved)) { ringStop(g); return; }
+      var progress = Math.min(1, Math.max(0, (now - started) / duration));
+      var eased = 1 - Math.pow(1 - progress, 3);
+      r.ang = from + (best - from) * eased;
       ringRender(g);
-      r.raf = requestAnimationFrame(passo);
-    }); }
+      if (progress < 1) { r.raf = requestAnimationFrame(passo); }
+      else { ringStop(g); }
+    });
   }
   function ringBind(g) {
     var r = g.anel;
     r.palco.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) { return; }
-      r.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, from: r.ang, moved: false };
+      ringStop(g);
+      r.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, from: r.ang, width: Math.max(260, r.palco.clientWidth), moved: false };
     });
     r.palco.addEventListener('pointermove', function (e) {
       var d = r.drag;
@@ -367,20 +339,22 @@
       var dx = e.clientX - d.x, dy = e.clientY - d.y;
       if (!d.moved) {
         if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) { return; }
-        d.moved = true; r.box.classList.add('is-arrastando');
+        d.moved = true; r.box.classList.add('is-arrastando'); r.giro.style.willChange = 'transform';
         try { r.palco.setPointerCapture(d.id); } catch (err) {}
       }
-      r.ang = d.from + dx * (160 / Math.max(260, r.palco.clientWidth)); // pixels → graus, limitado pela largura do palco
+      r.ang = d.from + dx * (160 / d.width); // largura medida uma vez no início do gesto
       ringRender(g);
     });
     var soltar = function (e) {
       var d = r.drag;
       if (!d || (e && e.pointerId !== d.id)) { return; }
       r.drag = null; r.box.classList.remove('is-arrastando');
+      ringStop(g);
       var n = g.slides.length, best = 0, dist = Infinity;
       if (!d.moved) { // clique sem arraste: metade esquerda volta uma tela, metade direita avança
         var box = r.palco.getBoundingClientRect();
         if (e && e.type === 'pointerup') { go(g.index + (e.clientX < box.left + box.width / 2 ? -1 : 1)); }
+        else { ringTo(g, g.index); }
         return;
       }
       r.paineis.forEach(function (pn, k) { var dd = Math.abs(ringNorm(pn.a + r.ang)); if (dd < dist) { dist = dd; best = k; } });
@@ -389,31 +363,50 @@
     r.palco.addEventListener('pointerup', soltar);
     r.palco.addEventListener('pointercancel', soltar);
     r.palco.addEventListener('dragstart', function (e) { e.preventDefault(); });
-    window.addEventListener('resize', function () { if (g.el.open) { settleGalleryFlight(g); ringMeasure(g); ajusta(g); } });
-    window.addEventListener('orientationchange', function () { if (g.el.open) { settleGalleryFlight(g); setTimeout(function () { if (g.el.open) { ringMeasure(g); ajusta(g); } }, 120); } });
+    window.addEventListener('resize', function () { if (g.el.open) { g.needsReturnMeasure = true; settleGalleryFlight(g); ajusta(g); } });
+    window.addEventListener('orientationchange', function () { if (g.el.open) { g.needsReturnMeasure = true; settleGalleryFlight(g); setTimeout(function () { if (g.el.open) { ajusta(g); } }, 120); } });
   }
 
-  function go(i) {
+  function loadGallerySlide(slide, size) {
+    if (slide.loaded && slide.loaded.size === size) { return slide.loaded.promise; }
+    var loader = new Image(), entry = { size: size };
+    slide.loaded = entry;
+    entry.promise = new Promise(function (resolve) {
+      loader.onload = function () {
+        if (loader.decode) { loader.decode().then(function () { resolve(loader); }, function () { resolve(loader.naturalWidth ? loader : null); }); }
+        else { resolve(loader); }
+      };
+      loader.onerror = function () { if (slide.loaded === entry) { slide.loaded = null; } resolve(null); };
+      loader.decoding = 'async'; loader.sizes = size; loader.srcset = slide.srcset; loader.src = slide.src;
+    });
+    return entry.promise;
+  }
+
+  function go(i, refresh) {
     var g = gal, n = g.slides.length;
     if (g.motion && g.motion.closing) { return; }
+    g.onEntered = null;
     settleGalleryFlight(g);
     if (!n) { return; }
     i = ((i % n) + n) % n; // dá a volta nas pontas
-    if (i === g.index) { return; }
+    if (i === g.index && !refresh) { return; }
     // tela que já falhou: pula para a seguinte no sentido do pedido (senão a seta ficaria presa nela)
     var sentido = g.index < 0 ? 1 : (((i - g.index) % n) + n) % n <= n / 2 ? 1 : -1, tentativas = 0;
     while (g.slides[i].erro && tentativas < n) { i = ((i + sentido) % n + n) % n; tentativas++; }
-    if (tentativas >= n || i === g.index) { return; }
+    if (tentativas >= n || (i === g.index && !refresh)) { return; }
     g.index = i; // o pedido; g.shown é o que está na tela
     ringTo(g, i); // o anel gira na hora para a tela pedida
-    var slide = g.slides[i], token = ++g.token;
-    var loader = new Image();
-    loader.onload = function () {
-      var show = function () {
-        if (token !== g.token) { return; } // chegou tarde: outra tela já foi pedida
+    var slide = g.slides[i], token = ++g.token, size = Math.ceil(g.tela.clientWidth) + 'px';
+    loadGallerySlide(slide, size).then(function (loader) {
+      if (token !== g.token || !g.el.open) { return; }
+      if (loader) {
+        if (g.shown === i && g.layers[g.front].currentSrc === (loader.currentSrc || loader.src)) {
+          if (n > 1) { loadGallerySlide(g.slides[(i + 1) % n], size); }
+          return;
+        }
         setZoom(false);
         var back = g.layers[1 - g.front];
-        back.srcset = slide.srcset; back.sizes = SIZES; back.src = slide.src; back.alt = slide.alt;
+        back.removeAttribute('srcset'); back.removeAttribute('sizes'); back.src = loader.currentSrc || loader.src; back.alt = slide.alt;
         g.layers[g.front].classList.remove('is-on'); g.layers[g.front].alt = '';
         back.classList.add('is-on');
         g.front = 1 - g.front;
@@ -422,23 +415,15 @@
         g.posicao.textContent = 'Tela ' + (i + 1) + ' de ' + n + ': ';
         g.legenda.textContent = slide.label;
         g.pos.textContent = (i + 1) + ' de ' + n + (n === 1 ? ' tela' : ' telas'); // só o que está de fato na tela (g.shown), nunca "0 de N"
-      };
-      // decode() evita o engasgo na troca, mas pode demorar a resolver sem quadros novos na tela: não seguramos a tela por ele
-      var shown = false, once = function () { if (!shown) { shown = true; show(); } };
-      if (loader.decode) { loader.decode().then(once, once); setTimeout(once, 280); } else { once(); }
-    };
-    loader.onerror = function () {
-      if (token !== g.token) { return; }
-      slide.erro = true;
-      if (g.shown < 0) { // nem a primeira carregou: aviso útil; setas, anel e Fechar continuam
-        g.aviso.hidden = false; g.legenda.textContent = 'Tela indisponível';
+        // Uma vizinha decodificada, sem novos loaders a cada volta do anel.
+        if (n > 1) { loadGallerySlide(g.slides[(i + 1) % n], size); }
+      } else {
+        slide.erro = true;
+        if (g.shown < 0) { g.aviso.hidden = false; g.legenda.textContent = 'Tela indisponível'; }
+        g.index = g.shown;
+        if (g.shown >= 0) { ringTo(g, g.shown); }
       }
-      g.index = g.shown; // setas e teclado continuam a partir da tela que está visível
-      if (g.shown >= 0) { ringTo(g, g.shown); } // o anel volta para a tela que ficou (senão apontaria para a que falhou)
-    };
-    loader.srcset = slide.srcset; loader.sizes = SIZES; loader.src = slide.src;
-    var nextSlide = g.slides[(i + 1) % n]; // pré-carrega só a próxima
-    if (nextSlide && n > 1) { var pre = new Image(); pre.srcset = nextSlide.srcset; pre.sizes = SIZES; pre.src = nextSlide.src; }
+    });
   }
 
   // nome oficial do projeto (o h3 pode conter o botão "Abrir galeria de …", cujo prefixo é só para leitores de tela)
@@ -450,22 +435,25 @@
   function openGallery(li, opener) {
     if (!gal) { gal = buildGallery(); }
     var g = gal, cs = getComputedStyle(li);
+    var palette = ['bg', 'soft', 'fg', 'mut', 'acc', 'line'].map(function (k) { return { key: k, value: cs.getPropertyValue('--p-' + k).trim() }; });
+    if (!g.el.open) { g.rootBackground = document.documentElement.style.backgroundColor; }
     clearGalleryFlight(g);
+    g.needsReturnMeasure = false;
     var cover = visibleCover(li);
-    var source = galleryMotion.matches ? null : gallerySnapshot(li.querySelector('.pasta-capa'));
+    var source = galleryMotion.matches ? null : coverBounds(li.querySelector('.pasta-capa'));
     g.sourceElement = li.querySelector('.pasta-capa');
-    ['bg', 'soft', 'fg', 'mut', 'acc', 'line'].forEach(function (k) {
-      var v = cs.getPropertyValue('--p-' + k).trim();
-      if (v) { g.el.style.setProperty('--g-' + k, v); } else { g.el.style.removeProperty('--g-' + k); }
+    palette.forEach(function (color) {
+      if (color.value) { g.el.style.setProperty('--g-' + color.key, color.value); } else { g.el.style.removeProperty('--g-' + color.key); }
     });
     g.titulo.textContent = nomeDoProjeto(li);
     g.tipo.textContent = li.querySelector('.pasta-rotulo').textContent;
     var desc = li.querySelector('.pasta-descricao');
     g.desc.textContent = desc ? desc.textContent : '';
-    g.slides = Array.prototype.map.call(li.querySelectorAll('.pasta-previa'), function (fig) {
+    g.slides = li._gallerySlides || (li._gallerySlides = Array.prototype.map.call(li.querySelectorAll('.pasta-previa'), function (fig) {
       var im = fig.querySelector('img'), cap = fig.querySelector('figcaption');
       return { src: im.getAttribute('src'), srcset: im.getAttribute('srcset') || '', alt: im.getAttribute('alt') || '', label: cap ? cap.textContent : '' };
-    });
+    }));
+    g.slides.forEach(function (slide) { slide.erro = false; });
     Array.prototype.forEach.call(g.layers, function (layer) { layer.className = ''; layer.removeAttribute('srcset'); layer.removeAttribute('src'); layer.alt = ''; });
     g.index = -1; g.shown = -1; g.front = 0; g.token++; g.opener = opener || null;
     g.aviso.hidden = true; g.legenda.textContent = ''; g.posicao.textContent = ''; g.pos.textContent = ''; setZoom(false);
@@ -480,13 +468,27 @@
       g.pos.textContent = (initial + 1) + ' de ' + g.slides.length + (g.slides.length === 1 ? ' tela' : ' telas');
     }
     document.documentElement.classList.add('galeria-aberta');
+    document.documentElement.style.backgroundColor = palette[0].value || '#063326'; // também preenche o gutter reservado
+    var staged = !galleryMotion.matches && !!g.moldura.animate;
+    if (staged) { g.el.classList.add('is-preparing'); }
     if (!g.el.open) { g.el.showModal(); }
     g.el.scrollTop = 0;
-    ringBuild(g); // precisa do diálogo aberto para medir
-    ajusta(g);
-    go(initial);
-    if (source) { flyGallery(g, source, gallerySnapshot(g.moldura), false); }
-    if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function reajusta() { if (!g.el.open) { return; } if (g.motion) { setTimeout(reajusta, 300); return; } ajusta(g); }); } // se as fontes chegam durante o voo de abertura, remede depois
+    g.index = initial;
+    // A capa já decodificada sustenta o morph; alta resolução e prefetch começam depois.
+    g.onEntered = function () { go(initial, true); };
+    g.prepare = function (immediate) {
+      ringBuild(g); // geometria só é medida após o layout final de ajusta()
+      ajusta(g);
+      if (g.anel.n) { g.anel.ang = g.anel.alvo = -g.anel.paineis[initial].a; ringRender(g); }
+      if (immediate || !flyGallery(g, source, false)) { var entered = g.onEntered; g.onEntered = null; if (entered) { entered(); } }
+      if (document.activeElement === g.el || !g.el.contains(document.activeElement)) { g.el.querySelector('.galeria-fechar').focus({ preventScroll: true }); }
+    };
+    if (staged) {
+      // A ativação modal e a geometria não disputam o mesmo frame. Sem pré-abertura oculta.
+      g.prepareFrame = requestAnimationFrame(function () {
+        g.prepareFrame = requestAnimationFrame(function () { finishGalleryPreparation(g, false); });
+      });
+    } else { finishGalleryPreparation(g, true); }
   }
 
   /* 2.30: dimensiona a galeria pela LARGURA E ALTURA disponíveis. A moldura principal recebe a maior largura que cabe
@@ -511,52 +513,54 @@
       var altura = H - outros - barra - legenda;
       return Math.min(colW, 960, Math.max(0, altura) * 1.6);
     };
-    if (lado) { ringMeasure(g); }
     var w = largura();
     // a tela principal manda: se com o anel normal ela ficar pequena (menos de 55 % da largura ou de 760 px), o anel encolhe
-    if (w < Math.min(760, colW * 0.55) && !g.anel.box.hidden) { d.classList.add('is-anel-compacto'); ringMeasure(g); w = largura(); }
+    if (w < Math.min(760, colW * 0.55) && !g.anel.box.hidden) { d.classList.add('is-anel-compacto'); w = largura(); }
     if (w < 300 && g.desc.textContent) { d.classList.add('is-sem-desc'); w = largura(); }
     if (lado) {
       // paisagem: a coluna da direita (nome, anel, contador, descrição) também precisa caber na altura
       var coluna = function () { return alto(g.titulo) + alto(g.nav) + alto(g.pos) + alto(g.desc); };
-      if (coluna() > H - alto(g.topo) && !d.classList.contains('is-anel-compacto') && !g.anel.box.hidden) { d.classList.add('is-anel-compacto'); ringMeasure(g); }
+      if (coluna() > H - alto(g.topo) && !d.classList.contains('is-anel-compacto') && !g.anel.box.hidden) { d.classList.add('is-anel-compacto'); }
       if (coluna() > H - alto(g.topo) && g.desc.textContent) { d.classList.add('is-sem-desc'); }
       w = largura();
     }
     w = Math.max(Math.min(260, colW), w);
     g.palco.style.width = Math.round(w) + 'px';
     d.style.setProperty('--tela-w', Math.round(w) + 'px');
-    if (lado) { ringMeasure(g); }
+    ringMeasure(g);
   }
 
   function closeGallery() {
     var g = gal;
     if (!g || !g.el.open) { return; }
     if (g.motion && g.motion.closing) { return; }
-    var source = galleryMotion.matches ? null : gallerySnapshot(g.motion ? g.motion.flight : g.moldura);
-    var background = g.motion ? g.motion.veil.getBoundingClientRect() : null;
-    clearGalleryFlight(g);
-    var target = source ? gallerySnapshot(g.sourceElement) : null;
-    if (g.anel.raf) { cancelAnimationFrame(g.anel.raf); g.anel.raf = 0; }
-    if (!flyGallery(g, source, target, true, background)) {
-      if (galleryMotion.matches) { g.el.close(); return; }
-      g.el.classList.add('is-closing');
-      setTimeout(function () { if (g.el.open) { g.el.close(); } }, 200);
+    g.onEntered = null; g.token++;
+    if (g.prepare) { cancelGalleryPreparation(g); g.el.close(); return; }
+    var target = galleryMotion.matches || g.tela.classList.contains('is-zoom') ? null : coverBounds(g.sourceElement);
+    ringStop(g);
+    // A última tela converge para a capa já carregada, dentro da mesma moldura.
+    var cover = target && visibleCover(g.sourceElement.closest('.pasta'));
+    if (cover && !g.tela.classList.contains('is-zoom')) {
+      var back = g.layers[1 - g.front];
+      back.removeAttribute('srcset'); back.src = cover.currentSrc || cover.src; back.alt = '';
+      g.layers[g.front].classList.remove('is-on'); back.classList.add('is-on'); g.front = 1 - g.front;
     }
+    if (!flyGallery(g, target, true)) { g.el.close(); }
   }
 
   function galleryPreferenceChanged() {
     if (!gal) { return; }
     settleGalleryFlight(gal);
-    if (gal.anel.raf) { cancelAnimationFrame(gal.anel.raf); gal.anel.raf = 0; }
+    ringStop(gal);
     if (gal.el.open) {
       ringBuild(gal);
-      if (gal.anel.n && gal.shown >= 0) { gal.anel.ang = -gal.anel.paineis[gal.shown].a; gal.anel.alvo = gal.anel.ang; ringRender(gal); }
       ajusta(gal);
+      if (gal.anel.n && gal.shown >= 0) { gal.anel.ang = -gal.anel.paineis[gal.shown].a; gal.anel.alvo = gal.anel.ang; ringRender(gal); }
     }
   }
   if (galleryMotion.addEventListener) { galleryMotion.addEventListener('change', galleryPreferenceChanged); }
   else if (galleryMotion.addListener) { galleryMotion.addListener(galleryPreferenceChanged); }
+  window.addEventListener('pagehide', function () { if (gal) { gal.onEntered = null; clearGalleryFlight(gal); ringStop(gal); if (gal.el.open) { gal.el.close(); } } });
 
   var canDialog = typeof window.HTMLDialogElement === 'function' && typeof window.HTMLDialogElement.prototype.showModal === 'function';
   if (canDialog) { document.documentElement.classList.add('tem-dialog'); }
@@ -703,6 +707,7 @@
     janela.addEventListener('pointerup', arma);
     if ('IntersectionObserver' in window) { new IntersectionObserver(function (en) { naTela = en[0].intersectionRatio >= 0.35; arma(); }, { threshold: [0, 0.35] }).observe(janela); }
     document.addEventListener('visibilitychange', arma);
+    document.addEventListener('siteflux:galleryclose', arma); // cinco segundos completos depois do retorno
     arma();
   })();
 
