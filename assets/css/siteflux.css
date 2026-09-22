@@ -906,7 +906,7 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   display: flex; flex-direction: column; width: 100%; padding: 8px 8px var(--pad);
   border-radius: var(--radius-lg); background: var(--sf-white); color: var(--ink);
   box-shadow: 0 18px 36px -22px rgba(4, 43, 32, .45);
-  transition: box-shadow .28s cubic-bezier(.65, 0, .35, 1);
+  transition: transform .5s var(--ease), box-shadow .28s cubic-bezier(.65, 0, .35, 1);
 }
 /* fluxGo e Personalizado: o corpo do cartão é o tom da própria capa diluído em branco (lima e azul da marca) */
 .plan:nth-child(2) .plan-inner { --cap: var(--sf-lime); background: #f4f7dc; background: color-mix(in srgb, var(--sf-lime) 24%, #fff); }
@@ -915,18 +915,22 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .plan:focus-within .plan-inner { box-shadow: 0 18px 36px -22px rgba(4, 43, 32, .45), 0 0 0 2px var(--sf-blue); }
 .plan:focus-within .plan-mark { opacity: .18; }
 .plan--focus:focus-within .plan-mark { opacity: .3; }
+/* hover (pedido do Walter, de volta na 2.32): o cartão sobe um pouco e o globo da marca gira e cresce; o contorno azul e o
+   realce do globo (2.31) continuam, e o mesmo realce vale no foco por teclado */
 @media (hover: hover) and (pointer: fine) {
-  .plan:hover .plan-inner { box-shadow: 0 18px 36px -22px rgba(4, 43, 32, .45), 0 0 0 2px var(--sf-blue); }
-  .plan:hover .plan-mark { opacity: .18; }
+  .plan:hover .plan-inner { transform: translateY(-8px); box-shadow: 0 34px 48px -24px rgba(4, 43, 32, .5), 0 0 0 2px var(--sf-blue); }
+  .plan--focus:hover .plan-inner { box-shadow: 0 34px 48px -24px rgba(4, 43, 32, .7), 0 0 0 2px var(--sf-blue); }
+  .plan:hover .plan-mark { opacity: .18; transform: rotate(-8deg) scale(1.06); }
   .plan--focus:hover .plan-mark { opacity: .3; }
 }
+@media (prefers-reduced-motion: reduce) { .plan-inner, .plan-mark { transition: none; } .plan:hover .plan-inner { transform: none; } .plan:hover .plan-mark { transform: none; } }
 .plan-inner > :not(header) { margin-inline: calc(var(--pad) - 8px); }
 /* capa */
 /* 2.29: cartões mais compactos (−10–15 % de altura) só pelos espaços internos — fontes, benefícios e botões continuam iguais */
 .plan header { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; padding: 14px calc(var(--pad) - 8px) 16px; border-radius: 20px; background: var(--cap); }
 .plan-num { display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; border-radius: 999px; background: var(--sf-dark); color: var(--sf-lime); font-size: 12px; font-weight: 700; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
 .plan--focus .plan-num { background: var(--sf-lime); color: var(--sf-dark); }
-.plan-mark { position: absolute; right: -58px; top: -62px; width: min(78%, 252px); fill: var(--sf-dark); opacity: .09; pointer-events: none; transition: opacity .28s cubic-bezier(.65, 0, .35, 1); }
+.plan-mark { position: absolute; right: -58px; top: -62px; width: min(78%, 252px); fill: var(--sf-dark); opacity: .09; pointer-events: none; transition: opacity .28s cubic-bezier(.65, 0, .35, 1), transform .9s var(--ease); }
 .plan--focus .plan-mark { fill: var(--sf-lime); opacity: .2; }
 .plan h3 { position: relative; margin-top: clamp(22px, 10cqi, 32px); font-size: clamp(24px, 9.4cqi, 31px); font-weight: 700; line-height: 1.1; letter-spacing: -.015em; }
 .plan-tag { position: relative; margin-top: 6px; font-size: 14.5px; font-weight: 600; color: var(--soft); }
