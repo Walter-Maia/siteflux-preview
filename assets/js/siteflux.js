@@ -856,7 +856,6 @@
           place(t, u, 0, 16);
         });
       }
-      pin.style.setProperty('--site-p', clamp((tiles[N - 1].u - 0.5) / 0.5).toFixed(4));
       marca();
     }
     // a cor só muda quando a peça ASSENTA: a concluída ganha o preenchimento azul e fica assim (.is-done);
@@ -888,7 +887,7 @@
         if (!on) {
           tiles.forEach(function (t) { t.el.style.transform = ''; t.el.style.willChange = ''; t.el.style.removeProperty('--step-p'); t.el.classList.remove('is-done'); });
           pin.classList.remove('is-all');
-          pin.style.removeProperty('--bento-p'); pin.style.removeProperty('--site-p');
+          pin.style.removeProperty('--bento-p');
         }
       }
       if (on) { measure(); update(); }

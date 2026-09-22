@@ -148,6 +148,14 @@ html.galeria-aberta { overflow: hidden; }
   font-family: inherit;
 }
 .galeria::backdrop { background: var(--g-bg, #063326); }
+/* 2.31: entrada e saída limpas — fade curto com leve escala; o fundo escuro entra junto */
+.galeria[open] { animation: galeria-entra .32s cubic-bezier(.2, .8, .2, 1) both; }
+.galeria[open]::backdrop { animation: galeria-fundo .32s ease both; }
+.galeria.is-closing { animation: galeria-sai .2s ease both; }
+.galeria.is-closing::backdrop { animation: galeria-fundo .2s ease reverse both; }
+@keyframes galeria-entra { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes galeria-sai { to { opacity: 0; } }
+@keyframes galeria-fundo { from { opacity: 0; } to { opacity: 1; } }
 /* A capa e a moldura compartilham a transição; o diálogo continua sendo o destino semântico. */
 .galeria.is-morphing, .galeria.is-morphing::backdrop { background: transparent; }
 .galeria.is-morphing .galeria-moldura { opacity: 0; }

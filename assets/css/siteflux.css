@@ -851,6 +851,8 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 /* 2.30 (pedido do Walter): cada bolinha começa VERDE; ao assentar, uma camada AZUL a preenche de baixo para cima (.is-done) e
    fica; com as quatro assentadas, todas azuis (.is-all) e a linha entre elas também. Sem JS ou com movimento reduzido (sem
    .is-fly): as quatro já concluídas, paradas. O número fica acima da camada (z-index −1 dentro do contexto da bolinha). */
+/* entrada limpa: cada passo sobe 20 px (transform do JS) e aparece (opacidade por --step-p), na ordem; a linha se desenha junto */
+.bento-pin.is-fly .step { opacity: calc(.12 + .88 * var(--step-p, 1)); }
 .step-num::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 50%; background: var(--sf-blue); transform: scaleY(1); transform-origin: 50% 100%; }
 .bento-pin.is-fly .step .step-num { color: var(--sf-lime); transition: color .3s ease .15s; }
 .bento-pin.is-fly .step .step-num::before { transform: scaleY(0); transition: transform .45s cubic-bezier(.2, .8, .2, 1); }
@@ -873,9 +875,6 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 }
 .step h3 { font-size: clamp(20px, 1.7vw, 24px); font-weight: 700; margin-top: 26px; line-height: 1.25; }
 .step p { font-size: 16px; margin-top: 10px; max-width: 34ch; }
-.step-structure { position: absolute; left: 76px; top: 8px; width: min(112px, calc(100% - 80px)); height: 44px; fill: none; stroke: var(--sf-dark); stroke-width: 1.5; stroke-linecap: round; }
-.step-structure-head { transform: scaleX(calc(.3 + .7 * var(--site-p, 1))); transform-origin: 0 4px; }
-.step-structure-content { opacity: var(--site-p, 1); transform: scaleY(var(--site-p, 1)); transform-origin: 0 4px; }
 @media (max-width: 1100px) {
   .steps { grid-template-columns: 1fr; gap: 0; }
   .steps-line { display: none; }
@@ -887,7 +886,6 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   .step-num { grid-row: span 2; }
   .step h3 { margin-top: 12px; }
   .step p { grid-column: 2; max-width: 52ch; }
-  .step-structure { position: static; grid-column: 2; width: 112px; margin-top: 18px; }
 }
 
 /* ---------- Planos ---------- */

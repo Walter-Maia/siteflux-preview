@@ -147,8 +147,9 @@
     if (closing && g.el.open) { g.el.close(); }
   }
 
+  var VOO_GALERIA = false; // 2.31: abertura/fechamento por fade curto (pedido do Walter: 'mais clean'); o voo da capa fica desligado
   function flyGallery(g, from, to, closing, backdropFrom) {
-    if (!from || !to || galleryMotion.matches || !Element.prototype.animate) { return false; }
+    if (!VOO_GALERIA || !from || !to || galleryMotion.matches || !Element.prototype.animate) { return false; }
     var flight = el('div', 'galeria-flight'), veil = el('div', 'galeria-veil');
     flight.setAttribute('aria-hidden', 'true'); veil.setAttribute('aria-hidden', 'true');
     flight.style.cssText = 'left:' + from.box.left + 'px;top:' + from.box.top + 'px;width:' + from.box.width + 'px;height:' + from.box.height + 'px;border-radius:' + from.radius;
@@ -537,7 +538,11 @@
     clearGalleryFlight(g);
     var target = source ? gallerySnapshot(g.sourceElement) : null;
     if (g.anel.raf) { cancelAnimationFrame(g.anel.raf); g.anel.raf = 0; }
-    if (!flyGallery(g, source, target, true, background)) { g.el.close(); }
+    if (!flyGallery(g, source, target, true, background)) {
+      if (galleryMotion.matches) { g.el.close(); return; }
+      g.el.classList.add('is-closing');
+      setTimeout(function () { if (g.el.open) { g.el.close(); } }, 200);
+    }
   }
 
   function galleryPreferenceChanged() {
