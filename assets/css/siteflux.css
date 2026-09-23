@@ -5,11 +5,15 @@
    ========================================================================== */
 
 /* Space Grotesk (OFL), variável 300–700, hospedada em assets/fonts: só para os títulos grandes (--font-display).
-   O texto corrido continua em Montserrat. */
+   O texto corrido é a Montserrat (OFL), variável 400–800, também local desde a 2.36 (o CSS do Google Fonts
+   bloqueava a primeira pintura). Nas duas, o arquivo latin-ext só baixa se aparecer um caractere dele. */
 @font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 300 700; font-display: swap; src: url('../fonts/space-grotesk-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 @font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 300 700; font-display: swap; src: url('../fonts/space-grotesk-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Montserrat'; font-style: normal; font-weight: 400 800; font-display: swap; src: url('../fonts/montserrat-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Montserrat'; font-style: normal; font-weight: 400 800; font-display: swap; src: url('../fonts/montserrat-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 
 :root {
+  color-scheme: only light; /* o site só tem tema claro: o modo escuro forçado (Samsung Internet, Chrome Android) não o recolore */
   --font-display: 'Space Grotesk', 'Montserrat', 'Segoe UI', Arial, sans-serif;
   --sf-dark: #042b20;
   --sf-lime: #ccd961;
@@ -53,7 +57,9 @@ img { height: auto; }
 a { color: inherit; }
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-:focus-visible:not(section) { border-radius: 6px; } /* a seção focada por um link do menu mantém o próprio raio */
+/* só quem não tem raio próprio ganha 6 px no foco (especificidade zero: pílulas e círculos continuam pílulas e círculos);
+   a seção focada por um link do menu mantém o próprio raio */
+:where(:focus-visible:not(section)) { border-radius: 6px; }
 .on-dark { --focus: var(--sf-lime); }
 
 .sr-only {
@@ -88,15 +94,19 @@ a { color: inherit; }
   transition: transform .3s var(--ease), background-color .3s ease, color .3s ease, border-color .3s ease;
 }
 .btn svg { width: 22px; height: 22px; flex: none; fill: currentColor; transition: transform .3s var(--ease); }
-.btn:hover { transform: translateY(-2px); }
-.btn:hover svg { transform: translateX(3px); }
 .btn--lime { background: var(--sf-lime); color: var(--sf-dark); }
-.btn--lime:hover { background: var(--sf-blue); }
 .btn--dark { background: var(--sf-dark); color: var(--sf-lime); }
-.btn--dark:hover { background: #0a4a38; color: #fff; }
 .btn--ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .45); }
-.btn--ghost:hover { border-color: var(--sf-lime); color: var(--sf-lime); }
 .btn--sm { min-height: 44px; padding: 10px 22px; font-size: 12.5px; }
+/* hover só onde existe ponteiro que paira: no toque ele "grudava" (o CTA voltava do WhatsApp azul e levantado) */
+@media (hover: hover) {
+  .btn:hover { transform: translateY(-2px); }
+  .btn:hover svg { transform: translateX(3px); }
+  .btn--lime:hover { background: var(--sf-blue); }
+  .btn--dark:hover { background: #0a4a38; color: #fff; }
+  .btn--ghost:hover { border-color: var(--sf-lime); color: var(--sf-lime); }
+}
+.btn:active { transform: translateY(1px); }
 
 /* ---------- Cabeçalho (navegação do protótipo) ----------
    Topo transparente, sem barra: botão à esquerda, logo ao centro e o ícone de menu à direita, flutuando
@@ -120,6 +130,11 @@ a { color: inherit; }
   --focus: var(--sf-lime);
 }
 .header[data-tone="blue"] { --lg-flux: #fff; --lg-accent: var(--sf-lime); }
+/* o HTML traz data-tone="dark" (o topo com JS nasce sobre a hero); sem JS ele fica estático sobre o lima, no tom claro */
+html:not(.js) .header {
+  --hd-fg: var(--sf-dark); --hd-cta-bg: var(--sf-dark); --hd-cta-fg: #fff; --hd-cta-hover: #0a4a38;
+  --lg-site: var(--sf-dark); --lg-flux: var(--sf-blue); --lg-accent: var(--sf-blue); --focus: var(--sf-dark);
+}
 /* sem JS o menu fica sempre expandido: o cabeçalho não acompanha o scroll */
 html:not(.js) .header { position: static; }
 /* com JS o cabeçalho ocupa só a altura do topo; a cortina é fixa e não empurra a página */
@@ -135,11 +150,10 @@ html:not(.js) .header-bar { height: auto; padding-block: 18px; }
 .header-cta { grid-column: 1; grid-row: 1; justify-self: start; }
 .header .logo { grid-column: 2; grid-row: 1; transition: opacity .2s ease; }
 .header .logo svg { height: 62px; }
-.menu-toggle { grid-column: 3; grid-row: 1; justify-self: end; }
-.header-cta, .header-cta:hover { background: var(--hd-cta-bg); color: var(--hd-cta-fg); }
-.header-cta { transition: transform .3s var(--ease), background-color .3s ease, color .3s ease, opacity .2s ease; }
-.header-cta:hover { background: var(--hd-cta-hover); }
+.header-cta { background: var(--hd-cta-bg); color: var(--hd-cta-fg); transition: transform .3s var(--ease), background-color .3s ease, color .3s ease, opacity .2s ease; }
+@media (hover: hover) { .header-cta:hover { background: var(--hd-cta-hover); color: var(--hd-cta-fg); } }
 .menu-toggle {
+  grid-column: 3; grid-row: 1; justify-self: end;
   position: relative; z-index: 2;
   display: none; align-items: center; justify-content: center;
   width: 52px; height: 48px; padding: 0;
@@ -155,9 +169,10 @@ html.js .menu-toggle { display: inline-flex; }
 .menu-toggle-lines span:nth-child(1) { top: 0; }
 .menu-toggle-lines span:nth-child(2) { top: 9px; }
 .menu-toggle-lines span:nth-child(3) { top: 18px; }
-@media (hover: hover) { .header[data-tone="dark"] .menu-toggle:hover .menu-toggle-lines span { background: var(--sf-lime); } }
+/* a cor do hover vai no contêiner das barras (elas usam currentColor): um seletor terminado em "span" fazia cada troca
+   de data-tone recalcular os ~300 spans das letras do menu */
+@media (hover: hover) { .header[data-tone="dark"] .menu-toggle:not([aria-expanded="true"]):hover .menu-toggle-lines { color: var(--sf-lime); } }
 .menu-toggle[aria-expanded="true"] { color: var(--sf-dark); --focus: var(--sf-dark); }
-.menu-toggle[aria-expanded="true"] .menu-toggle-lines span { background: var(--sf-dark) !important; }
 .menu-toggle[aria-expanded="true"] .menu-toggle-lines span:nth-child(1) { top: 9px; transform: rotate(45deg); }
 .menu-toggle[aria-expanded="true"] .menu-toggle-lines span:nth-child(2) { opacity: 0; }
 .menu-toggle[aria-expanded="true"] .menu-toggle-lines span:nth-child(3) { top: 9px; transform: rotate(-45deg); }
@@ -193,7 +208,11 @@ html.menu-open { overflow: hidden; }
 
 /* com JS: cortina lima em tela cheia que desce do topo */
 html.js .nav {
-  --hd-acc: var(--sf-lime); --hd-mark: var(--sf-blue);
+  --hd-acc: var(--sf-lime);
+  /* a cortina tem as próprias cores: fixar aqui as variáveis de tom impede que cada troca de data-tone do topo
+     se propague para as centenas de letras do menu */
+  --hd-fg: var(--sf-dark); --hd-cta-bg: var(--sf-dark); --hd-cta-fg: #fff; --hd-cta-hover: #0a4a38;
+  --lg-site: var(--sf-dark); --lg-flux: var(--sf-blue); --lg-accent: var(--sf-blue);
   position: fixed; inset: 0; z-index: 1;
   display: flex; align-items: center; overflow-y: auto;
   padding: calc(var(--hd-h) + 8px) 0 32px;
@@ -221,7 +240,10 @@ html.js .nav li:not(.nav-cta)::before {
   content: ''; position: absolute; inset: 0; z-index: 0; background: var(--sf-dark);
   transform: scaleX(0); transform-origin: left; transition: transform .45s var(--ease); pointer-events: none;
 }
-html.js .nav li:not(.nav-cta):hover::before, html.js .nav li:not(.nav-cta):has(a:focus-visible)::before { transform: scaleX(1); }
+/* regras separadas: um :has() numa lista derrubava a lista inteira nos navegadores sem ele (Firefox < 121: lima sobre lima) */
+html.js .nav li:not(.nav-cta):hover::before { transform: scaleX(1); }
+html.js .nav li:not(.nav-cta):has(a:focus-visible)::before { transform: scaleX(1); }
+@supports not selector(:has(a)) { html.js .nav a:not(.btn):focus-visible { background: var(--sf-dark); } }
 html.js .nav a:not(.btn) {
   /* o link ocupa a linha inteira: clicar em qualquer ponto da faixa leva à seção */
   position: relative; z-index: 1; display: block; min-height: 0; padding: 4px 4vw 4px 8vw; border-radius: 0;
@@ -252,6 +274,13 @@ html.js .nav .nav-cta .btn:hover { background: #0a4a38; }
   .header .logo svg { height: 40px; }
   html.js .nav a:not(.btn) { font-size: clamp(30px, min(9.5vw, 7vh), 56px); }
 }
+/* janela baixa e deitada (celular na horizontal, notebook com zoom de 200 %): o topo encolhe — com as medidas da largura
+   ele ocupava 22–29 % da altura e a logo de 40–48 px flutuava sobre o texto */
+@media (max-height: 500px) and (orientation: landscape) {
+  :root { --hd-h: 56px; --hd-top: 6px; }
+  .header .logo svg { height: 30px; }
+  html { scroll-padding-top: 72px; }
+}
 
 /* como no protótipo, a página começa por baixo do topo transparente: a hero sobe e ganha o respiro de volta por dentro */
 html.js .header { margin-bottom: calc(-1 * (var(--hd-h) + var(--hd-top))); }
@@ -274,7 +303,6 @@ main { max-width: var(--sf-max); margin: 0 auto; }
 .editorial { --surface: var(--sf-lime); }
 .box--dark { background: var(--sf-dark); color: #fff; }
 .box--blue { background: var(--sf-blue); }
-.box--beige { background: var(--sf-beige); }
 .box--white { background: var(--sf-white); }
 
 /* 2.34: o selo de cada seção deixou de ser bolinha + caixa alta (pedido do Walter: tinha "cara de I.A.").
@@ -284,10 +312,12 @@ main { max-width: var(--sf-max); margin: 0 auto; }
   display: inline-flex; align-items: center; gap: 12px;
   font-size: 14.5px; font-weight: 600; letter-spacing: 0; text-transform: none;
 }
+/* 2.36: opacidade .8 (a .6 ficava abaixo de 4,5:1 no azul, no lima, no bege e no branco) com o fio no mesmo tom de antes;
+   o número é índice visual: o leitor de tela lê só o nome da seção */
 .eyebrow[data-num]::before {
-  content: attr(data-num); flex: none; padding-right: 12px;
+  content: attr(data-num); content: attr(data-num) / ""; flex: none; padding-right: 12px;
   font-size: 12.5px; font-weight: 800; letter-spacing: .06em; font-variant-numeric: tabular-nums;
-  opacity: .6; border-right: 1.5px solid currentColor; border-right-color: color-mix(in srgb, currentColor 30%, transparent);
+  opacity: .8; border-right: 1.5px solid currentColor; border-right-color: color-mix(in srgb, currentColor 22.5%, transparent);
 }
 .h2 {
   font-family: var(--font-display);
@@ -327,23 +357,29 @@ main { max-width: var(--sf-max); margin: 0 auto; }
    sem JS fica o símbolo oficial parado. Monocromático em lima, mesma espessura em tudo. */
 .hero-art .globe, .hero-art .morph path { fill: none; stroke: var(--sf-lime); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .hero-art.is-morph .globe { display: none; }
+/* com JS, as etiquetas esperam o morph assumir (num celular lento elas apareciam na subida da arte e sumiam em seguida);
+   se o morph não puder rodar, .sem-morph devolve o símbolo parado com as etiquetas */
+html.js .hero-art:not(.is-morph):not(.sem-morph) .hero-chip { opacity: 0; }
 .hero-art.is-morph .hero-chip { opacity: 0; transform: translate(var(--tx), -50%) scale(.7); transition: opacity .3s ease, transform .55s cubic-bezier(.34, 1.56, .64, 1); }
 .hero-art.is-morph.is-site .hero-chip { opacity: 1; transform: translate(var(--tx), -50%); }
 .hero-art.is-site .hero-chip--2 { transition-delay: .12s; }
 .hero-art.is-site .hero-chip--3 { transition-delay: .24s; }
+/* chips ancorados pelo CENTRO sobre a borda da janela: canto de cima, lateral direita e base */
 .hero-chip {
+  --tx: -50%;
   position: absolute; display: inline-flex; align-items: center; gap: 10px;
   padding: 8px 20px 8px 8px; border-radius: 999px;
   font-size: clamp(13px, 1.1vw, 16px); font-weight: 700; white-space: nowrap;
   box-shadow: 0 18px 36px rgba(0, 0, 0, .28);
+  transform: translate(var(--tx), -50%);
 }
 .hero-chip svg { width: 32px; height: 32px; flex: none; }
-/* chips ancorados pelo CENTRO sobre a borda da janela: canto de cima, lateral direita e base */
-.hero-chip { --tx: -50%; transform: translate(var(--tx), -50%); }
 .hero-chip--1 { left: 17%; top: 15.8%; background: var(--sf-lime); color: var(--sf-dark); }
 /* "Publica" fica sobre a lateral direita (centro a 89 % da arte), mas o que passa da arte é limitado ao respiro real do bloco
-   (padding lateral − 16 px): a etiqueta inteira, ícone e texto, continua enquadrada em qualquer largura, inclusive na entrada com mola */
-.hero-chip--2 { left: auto; right: 11%; top: 47%; --tx: min(50%, calc(11cqw + var(--pad-x) - 16px)); background: var(--sf-blue); color: var(--sf-dark); }
+   (padding lateral − 16 px): a etiqueta inteira, ícone e texto, continua enquadrada em qualquer largura, inclusive na entrada com mola.
+   Sem unidades de contêiner (iOS 15) o transform inteiro ficaria inválido: lá a etiqueta só encosta na borda. */
+.hero-chip--2 { left: auto; right: 11%; top: 47%; --tx: 0%; background: var(--sf-blue); color: var(--sf-dark); }
+@supports (width: 1cqw) { .hero-chip--2 { --tx: min(50%, calc(11cqw + var(--pad-x) - 16px)); } }
 .hero-chip--3 { left: 40%; top: 80.4%; background: #fff; color: var(--sf-dark); }
 .hero-chip svg { fill: var(--sf-dark); }
 
@@ -390,7 +426,8 @@ html.intro-active, html.intro-leaving { --rise-start: 2.4s; }
    Base: a galeria da seção 2 de siteflux-prototipo.html com o carrossel aberto. As peças
    (recortes com transparência) ficam direto sobre o lima, sem painel, em arco, com os traços
    do globo atrás. Sem JS: grade legível com todas as peças. Com JS (.is-live) o script
-   posiciona cada peça no arco por transform e o leque desliza sozinho (o mouse pausa); sem controles. */
+   posiciona cada peça no arco por transform e o leque desliza sozinho (o mouse pausa); arrastar,
+   clicar numa peça ou chegar nela pelo Tab a traz para o centro. */
 .carousel {
   position: relative; isolation: isolate; /* os z-index das peças não competem com o cabeçalho */
   margin-top: clamp(40px, 5vw, 80px);
@@ -410,24 +447,32 @@ html.intro-active, html.intro-leaving { --rise-start: 2.4s; }
   display: block; left: 0; top: 46%; height: 112%; width: auto; max-width: none; aspect-ratio: 595.76 / 447.37;
   transform: translate(-50%, -50%); stroke: var(--sf-dark); stroke-width: 2; opacity: .3; overflow: visible;
 }
-.carousel.is-live .carousel-viewport { position: relative; }
+/* 2.30: cada peça é um botão (centraliza ao clicar/tocar; Enter/Espaço); arraste horizontal pela janela do leque.
+   O realce do hover fica no botão (filtro), nunca no <li>, cujo transform é escrito pelo JS a cada quadro.
+   touch-action: o arraste horizontal é do script, a rolagem vertical e a pinça (zoom) continuam do navegador. */
+.carousel.is-live .carousel-viewport { position: relative; touch-action: pan-y; touch-action: pan-y pinch-zoom; cursor: grab; }
+.carousel.is-live .carousel-viewport.is-dragging { cursor: grabbing; }
+.carousel.is-live .carousel-viewport.is-dragging .cards li { pointer-events: none; }
+/* a largura do palco também respeita a altura da janela (celular deitado: a peça passava da altura útil); o JS mede o palco */
 .carousel.is-live .cards {
   position: relative; display: block; padding: 0; margin-inline: auto;
-  width: min(30vw, 440px); aspect-ratio: 735 / 1059;
+  width: min(30vw, 440px); width: min(30vw, 440px, calc(100svh - 140px)); aspect-ratio: 735 / 1059;
 }
 .carousel.is-live .cards li { position: absolute; inset: 0; user-select: none; -webkit-user-select: none; }
 .carousel.is-live .cards img { height: 100%; pointer-events: none; }
-/* 2.30: cada peça é um botão (centraliza ao clicar/tocar; Enter/Espaço); arraste horizontal pela janela do leque.
-   O realce do hover fica no botão (filtro), nunca no <li>, cujo transform é escrito pelo JS a cada quadro. */
-.carousel.is-live .carousel-viewport { touch-action: pan-y; cursor: grab; }
-.carousel.is-live .carousel-viewport.is-dragging { cursor: grabbing; }
-.carousel.is-live .carousel-viewport.is-dragging .cards li { pointer-events: none; }
-.card-btn { display: block; width: 100%; height: 100%; padding: 0; border: 0; border-radius: inherit; background: transparent; cursor: inherit; -webkit-tap-highlight-color: transparent; transition: filter .3s ease; }
+/* sem border-radius: inherit — herdar forçava o recálculo do botão a cada quadro em que o <li> se move */
+.card-btn { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: inherit; -webkit-tap-highlight-color: transparent; transition: filter .3s ease; }
 .card-btn img { display: block; width: 100%; }
 @media (hover: hover) and (pointer: fine) { .cards li:hover .card-btn { filter: brightness(1.07) saturate(1.05); } }
 .card-btn:focus-visible { outline: 3px solid var(--sf-dark); outline-offset: 4px; }
-@media (max-width: 860px) { .carousel.is-live .carousel-mark { display: none; } .carousel.is-live .cards { width: min(44vw, 340px); } }
-@media (max-width: 640px) { .carousel.is-live .cards { width: 78vw; } }
+@media (max-width: 860px) { .carousel.is-live .carousel-mark { display: none; } .carousel.is-live .cards { width: min(44vw, 340px); width: min(44vw, 340px, calc(100svh - 120px)); } }
+@media (max-width: 640px) { .carousel.is-live .cards { width: 78vw; width: min(78vw, calc(100svh - 120px)); } }
+/* acima de 1920 px o <main> para no meio da janela: as peças e os traços que saem pelas pontas somem num esmaecimento,
+   não num corte reto sobre o lima */
+@media (min-width: 1921px) {
+  .carousel.is-live .carousel-viewport { -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+  .carousel.is-live .carousel-mark { -webkit-mask-image: linear-gradient(90deg, transparent 50%, #000 62%); mask-image: linear-gradient(90deg, transparent 50%, #000 62%); }
+}
 
 /* ---------- O que você recebe: o tablet que se monta no scroll ----------
    Base: seção 4 de siteflux-prototipo.html (.s3-card-frame, wireframe e balão).
@@ -436,8 +481,9 @@ html.intro-active, html.intro-leaving { --rise-start: 2.4s; }
    de scroll, a entrada inclinada do tablet, --b de cada bloco (0 → 1), a rolagem interna e
    data-step (balão e legenda da vez). */
 .story-head { margin-inline: auto; text-align: center; }
-.story-head .eyebrow { justify-content: center; }
 .story-head .lead { margin-inline: auto; }
+/* a frase de apoio acompanha o modo: só pede para rolar quando a montagem no scroll está ligada */
+.story:not(.is-story) .lead-rolar, .story.is-story .lead-ver { display: none; }
 .story-stage { display: grid; justify-items: center; gap: 20px; }
 .story-caption { display: none; }
 
@@ -460,8 +506,9 @@ html.intro-active, html.intro-leaving { --rise-start: 2.4s; }
 .device[data-view="mobile"] .device-paper { border-radius: 20px; }
 .device[data-view="mobile"] .device-frame { border-radius: 30px; }
 .device.is-ready .device-screen { position: absolute; top: 10px; left: 10px; transform-origin: 0 0; }
-.device.is-morphing .device-frame { overflow: visible; background: transparent; }
+.device.is-morphing .device-frame { overflow: visible; background: transparent; box-shadow: none; }
 .device.is-morphing .device-screen { overflow: visible; background: transparent; }
+.device.is-morphing .device-screen, .device.is-morphing .device-bezel, .device.is-morphing .device-paper { will-change: transform; }
 .device.is-morphing .device-screen .device-track .wire-block { background: transparent; border-color: transparent; }
 .device-dots { display: inline-flex; gap: 6px; flex: none; }
 .device-dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, .3); }
@@ -568,7 +615,7 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .01em; white-space: nowrap; cursor: pointer;
   transition: background-color .25s ease, color .25s ease;
 }
-.device-seg button:hover { color: #fff; }
+@media (hover: hover) { .device-seg button:hover { color: #fff; } }
 .device-seg button[aria-pressed="true"] { background: var(--sf-lime); color: var(--sf-dark); }
 .device-seg button:focus-visible { outline: 2px solid var(--sf-lime); outline-offset: 2px; }
 .device-seg svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -612,18 +659,23 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   .lbl-short { display: inline; }
   .device-dots { display: none; }
 }
+/* sem container queries (iOS 15) a visão "celular" mostraria o layout de computador espremido: só o computador fica */
+@supports not (container-type: inline-size) { .device-seg--view { display: none; } }
 
 /* O palco e os controles ficam estáveis; a moldura inteira muda de proporção.
    O JS dimensiona a viewport lógica e reduz computador uniformemente em telas pequenas. */
-.device-view { position: relative; display: flex; align-items: center; justify-content: center; }
+.device-view { position: relative; display: flex; align-items: flex-start; justify-content: center; }
 .device-view .device-screen { width: 100%; border-radius: 14px; }
 .device[data-view="mobile"] .device-screen { border-radius: 20px; }
 .device-track[hidden] { display: none; }
 /* no celular os balões encostam no aparelho, não na moldura */
 .device[data-view="mobile"] .balloon--1, .device[data-view="mobile"] .balloon--3, .device[data-view="mobile"] .balloon--5 { right: 14%; }
 .device[data-view="mobile"] .balloon--2, .device[data-view="mobile"] .balloon--4, .device[data-view="mobile"] .balloon--6 { left: 14%; }
-.story.is-story .device-view { height: clamp(200px, calc(100svh - 380px), 520px); }
 .device[data-view="mobile"] .device-track { font-size: max(7px, 3.9cqi); }
+/* Com JS as larguras lógicas são fixas (960 / 300 px). Os valores equivalentes
+   evitam resolver cqi novamente durante o morph; sem JS a escala continua fluida. */
+.device.is-ready .device-track { font-size: 15.168px; }
+.device.is-ready[data-view="mobile"] .device-track { font-size: 11.7px; }
 
 /* ----- peças dos outros dois sites ----- */
 .site-nav--light { background: #fff; color: var(--sf-dark); border-bottom: 1px solid rgba(4, 43, 32, .1); }
@@ -717,9 +769,8 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .device-screen .device-track .rx,
 .device-screen .device-track .site-links i,
 .device-screen .device-track .site-stats span { color: transparent; background: var(--w1); border-radius: .45em; }
-.device-screen .device-track .site-links.rx, .device-screen .device-track .site-line.rx, .device-screen .device-track .site-check.rx { background: none; }
-.device-screen .device-track .site-line, .device-screen .device-track .site-check { background: var(--w1); opacity: 1; }
-.device-screen .device-track .site-check::before { background: var(--w1); }
+.device-screen .device-track .site-links.rx, .device-screen .device-track .site-line.rx { background: none; }
+.device-screen .device-track .site-line { background: var(--w1); opacity: 1; }
 .device-screen .device-track .site-p.rx { background: var(--w2); opacity: 1; }
 .device-screen .device-track .site-h1 .rx { margin-bottom: .12em; }
 .device-screen .device-track .site-h1 em, .device-screen .device-track .inst-hero .site-h1 em { color: transparent; background: var(--w1); }
@@ -751,7 +802,7 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 /* superfícies */
 .device-screen .device-track .site-marquee { background: var(--w2); }
 .device-screen .device-track .site-marquee span { color: transparent; }
-.device-screen .device-track .site-cell, .device-screen .device-track .site-plan, .device-screen .device-track .shop-cartbox {
+.device-screen .device-track .site-cell, .device-screen .device-track .shop-cartbox {
   background: #fff; color: transparent; box-shadow: none; border: 1.5px dashed rgba(4, 43, 32, .25);
 }
 .device-screen .device-track .site-row { border-color: var(--w1); }
@@ -777,6 +828,16 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .story.is-story .site-stars svg:nth-child(3) { --s: clamp(0, calc((var(--b, 0) - .54) * 12), 1); }
 .story.is-story .site-stars svg:nth-child(4) { --s: clamp(0, calc((var(--b, 0) - .66) * 12), 1); }
 .story.is-story .site-stars svg:nth-child(5) { --s: clamp(0, calc((var(--b, 0) - .78) * 12), 1); }
+/* No celular o scroll anima só cada bloco, mantendo a construção progressiva.
+   Os descendentes ficam prontos: sem repintar máscaras e traços a cada pixel. */
+.story.is-story.is-compact-motion .wire-block { --b: 1; --b2: 1; }
+.story.is-story.is-compact-motion .rx { clip-path: none; }
+.story.is-story.is-compact-motion .pop,
+.story.is-story.is-compact-motion .rise,
+.story.is-story.is-compact-motion .site-cell,
+.story.is-story.is-compact-motion .site-row,
+.story.is-story.is-compact-motion .site-stars svg { opacity: 1; transform: none; }
+.story.is-story.is-compact-motion .draw { stroke-dasharray: none; stroke-dashoffset: 0; }
 .balloon {
   position: absolute; z-index: 2; display: inline-flex; align-items: center; gap: 10px;
   max-width: 260px; padding: 7px 18px 7px 7px; border-radius: 999px;
@@ -800,26 +861,32 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   .balloon svg { width: 28px; height: 28px; }
   .balloon--1, .balloon--3, .balloon--5 { right: -8px; }
   .balloon--2, .balloon--4, .balloon--6 { left: -8px; }
-  .device { border-radius: 24px; }
 }
 
 /* ----- modo história ----- */
-.story.is-story .story-pin { height: calc(100vh + 6 * 56vh); }
+.story.is-story .story-pin { height: calc(100vh + 6 * 56vh); height: calc(100svh + 6 * 56svh); }
+/* 2.36: a janela do aparelho tem a altura da moldura da vez (JS) e a legenda vem logo abaixo: não sobra vão entre a
+   moldura e a legenda. O JS desce o conjunto (margin-top da figura) metade da sobra medida com a maior das duas molduras,
+   então ele fica equilibrado no palco e a barra de controles não muda de lugar na troca computador ↔ celular. */
 .story.is-story .story-stage {
   position: sticky; top: 0; height: 100vh; height: 100svh;
-  grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: 14px;
+  grid-template-rows: auto auto; align-content: start; align-items: start; gap: 14px;
   padding: 136px 0 14px; /* abaixo do slogan da logo, com folga */
 }
 .story.is-story .device { transform-origin: 50% 0; }
-/* proporção travada: a tela do tablet é sempre 1,89:1 e o tamanho vem da ALTURA da janela (o que sobra entre o
-   cabeçalho e a legenda), então o enquadramento é o mesmo em qualquer resolução ou zoom; o conteúdo escala junto (cqi) */
-.story.is-story .device-fig { max-width: none; width: min(100%, max(420px, calc((100vh - 366px) * 1.89 + 48px))); width: min(100%, max(420px, calc((100svh - 366px) * 1.89 + 48px))); }
-.story.is-story .device-screen { aspect-ratio: auto; }
+/* O JS mede cabeçalho, barra e legenda uma única vez e escreve a largura da figura (até 1440 px em telas grandes);
+   a tela web mantém a proporção 1,89:1. */
+.story.is-story .device-fig { max-width: none; }
 .story.is-story .device-fig figcaption { display: none; }
 
 .story.is-story .balloon { display: inline-flex; opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .3s cubic-bezier(.65, 0, .35, 1); }
 .story.is-story[data-step="1"] .balloon--1, .story.is-story[data-step="2"] .balloon--2, .story.is-story[data-step="3"] .balloon--3,
 .story.is-story[data-step="4"] .balloon--4, .story.is-story[data-step="5"] .balloon--5, .story.is-story[data-step="6"] .balloon--6 { opacity: 1; transform: none; }
+.story.is-story .balloon--1 { top: calc(var(--device-bar-h, 68px) + var(--device-frame-h, 300px) * .2); }
+.story.is-story .balloon--2, .story.is-story .balloon--4 { top: calc(var(--device-bar-h, 68px) + var(--device-frame-h, 300px) * .7); }
+.story.is-story .balloon--3, .story.is-story .balloon--5 { top: calc(var(--device-bar-h, 68px) + var(--device-frame-h, 300px) * .14); }
+.story.is-story .balloon--6 { top: calc(var(--device-bar-h, 68px) + var(--device-frame-h, 300px) * .8); }
+.story.is-story .device.is-morphing .balloon { opacity: 0; transition: none; }
 
 .story.is-story .story-caption { display: grid; width: min(100%, 640px); min-height: 78px; text-align: center; }
 .story-caption li { grid-area: 1 / 1; display: grid; justify-items: center; gap: 4px; opacity: 0; visibility: hidden; transform: translateY(10px); transition: opacity .35s ease, transform .5s var(--ease), visibility 0s .35s; }
@@ -828,21 +895,18 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .story-caption p { font-size: 15px; line-height: 1.5; max-width: 56ch; }
 .story-caption .offer-num { display: inline-block; padding: 0 10px; border-radius: 999px; background: var(--sf-lime); font-size: 12px; font-weight: 800; letter-spacing: .06em; line-height: 22px; }
 @media (max-height: 640px) {
-  .story.is-story .story-stage { padding-top: 92px; gap: 10px; }
+  .story.is-story .story-stage { padding-top: calc(var(--hd-h) + var(--hd-top) + 8px); gap: 10px; }
   .story.is-story .story-caption { min-height: 62px; }
   .story-caption .offer-num { display: none; }
   .story-caption p { font-size: 14px; }
-  .story.is-story .device-fig { width: min(100%, max(380px, calc((100vh - 270px) * 1.89 + 48px))); }
 }
 @media (max-width: 700px) {
+  .story .story-pin { margin-inline: -12px; } /* moldura maior sem reduzir a coluna do texto da seção */
   .story.is-story .story-stage { padding-top: calc(var(--hd-h) + var(--hd-top) + 2px); } /* logo abaixo da caixa do topo (70 + 16 px nesta largura) */
-  .story.is-story .device-fig { width: 100%; }
-  .story.is-story .device-view { aspect-ratio: auto; height: clamp(200px, min(100svh - 380px, 96vw), 640px); }
   .story.is-story .story-caption { min-height: 104px; }
 }
 /* estreita e baixa: tela e legenda mais compactas; se mesmo assim o conjunto não couber, o JS solta a história */
 @media (max-width: 700px) and (max-height: 600px) {
-  .story.is-story .device-view { height: clamp(170px, min(100svh - 380px, 96vw), 640px); }
   .story.is-story .story-caption { min-height: 88px; }
 }
 @media print { .story.is-story .story-pin { height: auto; } .story.is-story .story-stage { position: static; height: auto; } }
@@ -908,18 +972,22 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .plan { display: flex; container-type: inline-size; }
 /* --realce: a cor do contorno de hover/foco sai do PRÓPRIO cartão (pedido do Walter), não um azul para todos */
 .plan-inner {
-  --cap: var(--sf-beige); --ink: var(--sf-dark); --soft: rgba(4, 43, 32, .72); --rule: rgba(4, 43, 32, .28); --pad: clamp(16px, 7cqi, 26px);
+  --cap: var(--sf-beige); --ink: var(--sf-dark); --soft: rgba(4, 43, 32, .72); --rule: rgba(4, 43, 32, .28); --pad: 22px;
   --realce: var(--sf-dark); /* fluxStart: branco e bege — o verde-escuro do próprio texto */
   display: flex; flex-direction: column; width: 100%; padding: 8px 8px var(--pad);
   border-radius: var(--radius-lg); background: var(--sf-white); color: var(--ink);
   box-shadow: 0 18px 36px -22px rgba(4, 43, 32, .45);
   transition: transform .5s var(--ease), box-shadow .28s cubic-bezier(.65, 0, .35, 1);
 }
-/* fluxGo e Personalizado: o corpo do cartão é o tom da própria capa diluído em branco (lima e azul da marca) */
-/* o lima do cartão puro sumiria no fundo lima da seção: o realce é o mesmo lima puxado para o verde-escuro */
-.plan:nth-child(2) .plan-inner { --cap: var(--sf-lime); --realce: #6c8542; --realce: color-mix(in srgb, var(--sf-lime) 52%, var(--sf-dark)); background: #f4f7dc; background: color-mix(in srgb, var(--sf-lime) 24%, #fff); }
+/* sem unidades de contêiner (iOS 15) o respiro fica em 22 px; com elas, acompanha a largura do cartão */
+@supports (width: 1cqi) { .plan-inner { --pad: clamp(16px, 7cqi, 26px); } }
+/* fluxGo e Personalizado: o corpo do cartão é o tom da própria capa diluído em branco (lima e azul da marca).
+   Cores em hex (as mesmas de color-mix(): 24 % de lima e 18 % de azul em branco): o tom do cabeçalho lê o fundo, e
+   o color-mix() saía como color(srgb 0–1), lido como verde-escuro — a logo e o menu sumiam sobre esses cartões. */
+/* o lima do cartão puro sumiria no fundo lima da seção: o realce é o mesmo lima puxado para o verde-escuro (52 %) */
+.plan:nth-child(2) .plan-inner { --cap: var(--sf-lime); --realce: #6c8542; background: #f3f6d9; }
 .plan--focus .plan-inner { --cap: #0a4a38; --realce: #0a4a38; --ink: #fff; --soft: rgba(255, 255, 255, .78); --rule: rgba(255, 255, 255, .3); background: var(--sf-dark); box-shadow: 0 26px 44px -22px rgba(4, 43, 32, .7); } /* fluxPro: o verde da própria capa */
-.plan--custom .plan-inner { --cap: var(--sf-blue); --realce: var(--sf-blue); --rule: rgba(4, 43, 32, .34); background: #e0f4f8; background: color-mix(in srgb, var(--sf-blue) 18%, #fff); } /* Personalizado: segue azul */
+.plan--custom .plan-inner { --cap: var(--sf-blue); --realce: var(--sf-blue); --rule: rgba(4, 43, 32, .34); background: #dcf3f7; } /* Personalizado: segue azul */
 .plan:focus-within .plan-inner { box-shadow: 0 18px 36px -22px rgba(4, 43, 32, .45), 0 0 0 2px var(--realce); }
 .plan:focus-within .plan-mark { opacity: .18; }
 .plan--focus:focus-within .plan-mark { opacity: .3; }
@@ -940,16 +1008,16 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .plan--focus .plan-num { background: var(--sf-lime); color: var(--sf-dark); }
 .plan-mark { position: absolute; right: -58px; top: -62px; width: min(78%, 252px); fill: var(--sf-dark); opacity: .09; pointer-events: none; transition: opacity .28s cubic-bezier(.65, 0, .35, 1), transform .9s var(--ease); }
 .plan--focus .plan-mark { fill: var(--sf-lime); opacity: .2; }
-.plan h3 { position: relative; margin-top: clamp(22px, 10cqi, 32px); font-size: clamp(24px, 9.4cqi, 31px); font-weight: 700; line-height: 1.1; letter-spacing: -.015em; }
+.plan h3 { position: relative; margin-top: 28px; margin-top: clamp(22px, 10cqi, 32px); font-size: 28px; font-size: clamp(24px, 9.4cqi, 31px); font-weight: 700; line-height: 1.1; letter-spacing: -.015em; }
 .plan-tag { position: relative; margin-top: 6px; font-size: 14.5px; font-weight: 600; color: var(--soft); }
 .plan--focus .plan-tag { color: var(--sf-lime); }
 .plan--custom .plan-tag { color: var(--sf-dark); }
 /* preço: "R$" no alto, número grande, "/mês" na linha de base; a altura é fixa para os quatro alinharem */
-.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; min-height: clamp(40px, 15.5cqi, 54px); margin-top: 18px; font-variant-numeric: tabular-nums; }
+.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; min-height: 50px; min-height: clamp(40px, 15.5cqi, 54px); margin-top: 18px; font-variant-numeric: tabular-nums; }
 .plan-cur { align-self: flex-start; margin-top: .25em; font-size: 15px; font-weight: 700; }
-.plan-price strong { font-size: clamp(40px, 15.5cqi, 54px); font-weight: 700; line-height: 1; letter-spacing: -.035em; }
+.plan-price strong { font-size: 50px; font-size: clamp(40px, 15.5cqi, 54px); font-weight: 700; line-height: 1; letter-spacing: -.035em; }
 .plan-price--texto { align-items: flex-end; }
-.plan-price--texto strong { font-size: clamp(28px, 10.6cqi, 37px); letter-spacing: -.02em; padding-bottom: .12em; }
+.plan-price--texto strong { font-size: 33px; font-size: clamp(28px, 10.6cqi, 37px); letter-spacing: -.02em; padding-bottom: .12em; }
 .plan--focus .plan-price strong { color: var(--sf-lime); }
 .plan-per { font-size: 15px; font-weight: 600; color: var(--soft); }
 /* lista: linhas pontilhadas entre os itens, seta oficial como marcador */
@@ -959,9 +1027,11 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .plan-list svg { width: 20px; height: 20px; fill: var(--sf-dark); }
 .plan--focus .plan-list svg { fill: var(--sf-lime); }
 .plan .btn { align-self: stretch; padding-inline: 16px; }
-.plan:not(.plan--focus):not(.plan--custom) .btn:hover { background: var(--sf-blue); color: var(--sf-dark); }
 .plan--custom .btn { background: var(--sf-blue); color: var(--sf-dark); }
-.plan--custom .btn:hover { background: var(--sf-dark); color: #fff; }
+@media (hover: hover) {
+  .plan:not(.plan--focus):not(.plan--custom) .btn:hover { background: var(--sf-blue); color: var(--sf-dark); }
+  .plan--custom .btn:hover { background: var(--sf-dark); color: #fff; }
+}
 .plans-note { margin-top: 20px; font-size: 14.5px; }
 /* só nas 4 colunas o destaque cresce para cima e para baixo; o conteúdo continua alinhado com os vizinhos */
 @media (min-width: 1181px) {
@@ -995,6 +1065,8 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   font-size: clamp(17px, 1.4vw, 20px); font-weight: 700; line-height: 1.35; transition: color .2s ease;
 }
 .faq-list summary::-webkit-details-marker { display: none; }
+/* o cartão recorta tudo o que passa da borda (raio + animação de altura): o anel de foco é desenhado por dentro */
+.faq-list summary:focus-visible { outline-offset: -4px; border-radius: 20px; }
 .faq-plus { position: relative; flex: none; width: 34px; height: 34px; border-radius: 50%; background: #fff; transition: background-color .28s cubic-bezier(.65, 0, .35, 1); }
 .faq-plus::before, .faq-plus::after { content: ''; position: absolute; left: 50%; top: 50%; background: var(--sf-dark); border-radius: 2px; transform: translate(-50%, -50%); }
 .faq-plus::before { width: 14px; height: 2.4px; }
@@ -1032,7 +1104,7 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
 .footer-nav ul { display: grid; grid-template-columns: repeat(2, auto); gap: 2px 36px; }
 .footer-nav a, .footer-contact a { display: inline-flex; align-items: center; min-height: 40px; font-weight: 600; text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
 .footer-nav a { text-decoration: none; }
-.footer-nav a:hover { text-decoration: underline; }
+@media (hover: hover) { .footer-nav a:hover { text-decoration: underline; } }
 .footer h2 { font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
 .footer-contact a { font-size: 20px; font-weight: 700; }
 .footer-bottom { margin-top: 40px; padding-top: 20px; border-top: 2px solid rgba(4, 43, 32, .2); font-size: 14px; }
@@ -1051,13 +1123,20 @@ html.js .device-tools { display: inline-flex; align-items: center; gap: 8px; fle
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .reveal-pending, .reveal-pending .ln > span { opacity: 1; transform: none; }
-  .steps-line.reveal-pending path { stroke-dashoffset: 0; }
   .intro, html.intro-active::before { display: none; }
 }
 
 @media print {
   .header, .hero-art, .deco-mark { display: none; }
   .reveal-pending { opacity: 1; transform: none; }
+}
+
+/* Alto contraste (cores forçadas do Windows): o navegador troca os fundos por Canvas, e ícones desenhados com fundo
+   sumiam — o botão do menu ficava invisível. Aqui eles usam as cores do sistema. */
+@media (forced-colors: active) {
+  .menu-toggle-lines span, .faq-plus::before, .faq-plus::after { forced-color-adjust: none; background: CanvasText; }
+  .menu-toggle { border: 1px solid CanvasText; }
+  .device-seg button[aria-pressed="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; }
 }
 
 /* ---------- Telas muito estreitas (≈320px) ---------- */
@@ -1118,3 +1197,13 @@ html.intro-active::before {
 html.js #siteflux { position: relative; z-index: 3; }
 html.js #siteflux > .open { padding-bottom: 0; }
 html.js #recursos { margin-top: calc(-1 * clamp(110px, 12vw, 190px)); padding-top: calc(var(--pad-y) + clamp(110px, 12vw, 190px)); }
+/* o link "O que você recebe" mira a borda da seção, que começa por baixo do leque: a margem negativa de rolagem
+   devolve o título ao mesmo lugar dos outros links */
+html.js #recursos { scroll-margin-top: calc(-1 * clamp(110px, 12vw, 190px)); }
+
+/* ---------- Telas acima de 1920 px ----------
+   O <main> para em 1920 px: a faixa bege, que até ali encosta nas bordas da janela, vira um bloco com a mesma linguagem
+   das caixas (fresta lima e cantos redondos) em vez de um retângulo de cantos retos no meio do lima. */
+@media (min-width: 1921px) {
+  .band { margin-inline: var(--box-gap); border-radius: var(--radius-xl); }
+}

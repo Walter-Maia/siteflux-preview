@@ -1,8 +1,9 @@
 /* ==========================================================================
-   Siteflux — camada "personalidade" (revisão 2.4: vitrine de #projetos refinada)
+   Siteflux — camada "personalidade" (vitrine de #projetos, galeria e letras do menu)
    1. Pastas editoriais em #projetos (skill colagem-pastas-interativas)
-   2. Letras em rolagem nos links curtos da navegação desktop
+   2. Letras em rolagem nos links da cortina do menu
       (skill links-rolagem-por-caractere)
+   3. Galeria do projeto · 4. Anel de telas · 5. Carrossel de capas
    Só CSS/DOM: funciona igual em file:// e HTTP. Sem JS as pastas ficam
    completas (details/summary nativo com a prévia ampliada) e os links são texto comum.
    ========================================================================== */
@@ -59,10 +60,14 @@
 /* imagem ausente ou com erro: a superfície fica na cor do próprio site (alt vazio na pilha decorativa; nome e tipo seguem em HTML) */
 .pasta-capa, .pasta-folha--detalhe { background: var(--p-bg); }
 
-/* leque: folhas para os lados, capa sobe 6 px. Ponteiro preciso no hover; foco por teclado e <details> aberto valem em qualquer aparelho */
-.pasta:focus-within .pasta-folha--cor, .pasta:has(details[open]) .pasta-folha--cor { transform: translate(calc(var(--dir) * -2.5% + var(--dir) * -14px), -2px) rotate(calc(var(--dir) * -5.5deg)); }
-.pasta:focus-within .pasta-folha--detalhe, .pasta:has(details[open]) .pasta-folha--detalhe { transform: translate(calc(var(--dir) * 2.5% + var(--dir) * 16px), -5px) rotate(calc(var(--dir) * 4.8deg)); }
-.pasta:focus-within .pasta-capa, .pasta:has(details[open]) .pasta-capa { transform: translateY(-6px); }
+/* leque: folhas para os lados, capa sobe 6 px. Ponteiro preciso no hover; foco por teclado e <details> aberto valem em qualquer aparelho.
+   Regras separadas: um :has() numa lista derruba a lista inteira nos navegadores sem ele (Firefox < 121). */
+.pasta:focus-within .pasta-folha--cor { transform: translate(calc(var(--dir) * -2.5% + var(--dir) * -14px), -2px) rotate(calc(var(--dir) * -5.5deg)); }
+.pasta:has(details[open]) .pasta-folha--cor { transform: translate(calc(var(--dir) * -2.5% + var(--dir) * -14px), -2px) rotate(calc(var(--dir) * -5.5deg)); }
+.pasta:focus-within .pasta-folha--detalhe { transform: translate(calc(var(--dir) * 2.5% + var(--dir) * 16px), -5px) rotate(calc(var(--dir) * 4.8deg)); }
+.pasta:has(details[open]) .pasta-folha--detalhe { transform: translate(calc(var(--dir) * 2.5% + var(--dir) * 16px), -5px) rotate(calc(var(--dir) * 4.8deg)); }
+.pasta:focus-within .pasta-capa { transform: translateY(-6px); }
+.pasta:has(details[open]) .pasta-capa { transform: translateY(-6px); }
 @media (hover: hover) and (pointer: fine) {
   .pasta:hover .pasta-folha--cor { transform: translate(calc(var(--dir) * -2.5% + var(--dir) * -14px), -2px) rotate(calc(var(--dir) * -5.5deg)); }
   .pasta:hover .pasta-folha--detalhe { transform: translate(calc(var(--dir) * 2.5% + var(--dir) * 16px), -5px) rotate(calc(var(--dir) * 4.8deg)); }
@@ -74,6 +79,10 @@
 @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
   .pasta:hover .pasta-tira { transform: translateY(-100cqh); transition: transform 1.1s cubic-bezier(.45, 0, .2, 1) .45s; }
 }
+/* a 2ª tela da tira só serve a esse deslize: onde ele não existe (toque, movimento reduzido) ela sai do layout e, lazy,
+   nem é baixada; no carrossel, só a capa do centro pode deslizar */
+@media not all and (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) { .pasta-tira img + img { display: none; } }
+.pastas.is-slider .pasta:not(.is-atual) .pasta-tira img + img { display: none; }
 
 /* identificação: HTML imóvel, fora de qualquer transform ou máscara */
 .pasta-info { padding-top: clamp(16px, 1.5vw, 20px); }
@@ -91,13 +100,13 @@
   transition: color .25s ease;
 }
 .pasta-detalhes summary::-webkit-details-marker { display: none; }
-.pasta-detalhes summary:hover { color: var(--aba); }
+@media (hover: hover) { .pasta-detalhes summary:hover { color: var(--aba); } }
 .pasta-telas { margin-left: auto; font-size: 13px; font-weight: 600; letter-spacing: .04em; color: rgba(255, 255, 255, .7); }
 .pasta-detalhes summary svg { width: 20px; height: 20px; flex: none; fill: none; stroke: var(--aba); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s var(--ease); }
 @media (hover: hover) and (pointer: fine) { .pasta-detalhes summary:hover svg { transform: translateX(3px); } }
 .pasta-detalhes[open] summary svg { transform: rotate(90deg); }
 .pasta-detalhes-corpo { padding: 6px 0 8px; }
-/* conteúdo do <details> (é a galeria sem JS e a fonte de dados da galeria com JS): descrição curta + cinco telas, na ordem da galeria */
+/* conteúdo do <details> (é a galeria sem JS e a fonte de dados da galeria com JS): descrição curta + telas do projeto, na ordem da galeria */
 .pasta-descricao { max-width: 48ch; margin-bottom: 18px; font-size: 16px; line-height: 1.55; color: rgba(255, 255, 255, .82); }
 .pasta-previa { margin: 0 0 14px; }
 .pasta-previa img { display: block; width: 100%; height: auto; border-radius: 8px; background: var(--p-bg); color: var(--p-fg, #fff); font-size: 14px; line-height: 1.45; }
@@ -111,7 +120,6 @@
   .pasta .pasta-tira { transform: none !important; }
 }
 @media (forced-colors: active) { .pasta-fundo { fill: CanvasText; } .pasta-folha, .pasta-capa { border: 1px solid CanvasText; } }
-@media print { .pasta-detalhes-corpo { display: block; } }
 
 /* ---------- 2. Letras em rolagem (links grandes do menu em tela cheia; o JS monta .roll) ---------- */
 .roll { display: inline-block; line-height: 1.5; }
@@ -121,36 +129,37 @@
 .roll-t > span { display: block; height: 1.5em; }
 /* fora do desktop (painel do menu) e com movimento reduzido só existe a primeira cópia: texto comum */
 .roll-t > span + span { display: none; }
+/* a cor dos links no hover e no foco e a ausência de marca de seção atual ficam em siteflux.css (html.js .nav …) */
 @media (prefers-reduced-motion: no-preference) {
   .roll-t > span + span { display: block; color: var(--hd-acc, var(--sf-lime)); }
   .roll-t { transition: transform .3s var(--ease) var(--d, 0ms); }
   .nav a.has-roll:focus-visible .roll-t { transform: translateY(-50%); }
-  .nav a.has-roll:focus-visible { color: var(--hd-fg, #fff); }
 }
 @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
   .nav a.has-roll:hover .roll-t { transform: translateY(-50%); }
-  .nav a.has-roll:hover { color: var(--hd-fg, #fff); }
 }
-/* text-decoration não atravessa inline-block: a marca de seção atual vira uma linha própria, sem mudar a altura */
-.nav a.has-roll[aria-current="true"] { text-decoration: none; }
-.nav a.has-roll[aria-current="true"] .roll { background: linear-gradient(var(--hd-mark, var(--sf-lime)), var(--hd-mark, var(--sf-lime))) 0 100% / 100% 2px no-repeat; padding-bottom: 5px; margin-bottom: -5px; }
 
 /* ---------- 3. Galeria do projeto (skill hero-imersiva-miniaturas; <dialog> montado pelo JS) ----------
    Tela cheia nas cores do próprio site (--g-* copiadas do <li>). Primeiro o trabalho: a tela ocupa a maior parte e forma um
-   conjunto só com legenda, setas e miniaturas; o texto é curto. Um índice só governa tela, miniatura, contador e legenda,
+   conjunto só com a legenda, o anel e as setas; o texto é curto. Um índice só governa tela, anel, posição e legenda,
    e eles só mudam quando a imagem nova realmente aparece. */
 html.tem-dialog { scrollbar-gutter: stable; } /* abrir/fechar não redimensiona toda a landing */
 html.galeria-aberta { overflow: hidden; }
+/* 2.36: largura pelo próprio inset (100vw contava a calha reservada da barra de rolagem e deslocava a galeria ~8 px no
+   Windows) e só contain: style (contain: layout prendia o fundo fixo ao diálogo, e ao rolar a galeria a landing aparecia
+   por baixo, no celular deitado) */
 .galeria {
   --g-bg: #063326; --g-soft: #0f5643; --g-fg: #fff; --g-mut: rgba(255, 255, 255, .78); --g-acc: var(--sf-lime); --g-line: rgba(255, 255, 255, .22);
-  position: fixed; inset: 0; width: 100vw; max-width: none; height: 100vh; height: 100dvh; max-height: none;
+  position: fixed; inset: 0; width: auto; max-width: none; height: 100vh; height: 100dvh; max-height: none;
   margin: 0; padding: 0; border: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
   background: transparent; color: var(--g-fg); --focus: var(--g-acc);
-  font-family: inherit; contain: layout style;
+  font-family: inherit; contain: style;
 }
 .galeria::backdrop { background: transparent; }
-.galeria-fundo { position: fixed; inset: 0; background: var(--g-bg); pointer-events: none; }
-.galeria.is-preparing .galeria-in { visibility: hidden; }
+.galeria-fundo { position: fixed; z-index: 0; inset: 0; background: var(--g-bg); pointer-events: none; }
+/* Só opacidade, que não é herdada. Visibilidade e hit-test permanecem estáveis
+   entre reaberturas; Escape, Tab e clique podem encerrar o preparo normalmente. */
+.galeria.is-preparing .galeria-in { opacity: 0; }
 .galeria.is-preparing .galeria-fundo { opacity: 0; }
 /* 2.34: só a moldura real se transporta; o diálogo não muda de escala. */
 .galeria-moldura { transform-origin: 0 0; }
@@ -160,7 +169,7 @@ html.galeria-aberta { overflow: hidden; }
    cada lado · descrição. Sem a fila de miniaturas nem o contador. A tela principal tem a proporção das capturas e a largura
    vem da altura da janela, para o conjunto caber sem rolar quando há altura; em janela baixa o diálogo rola normalmente. */
 .galeria-in {
-  position: relative;
+  position: relative; z-index: 1;
   display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "topo" "titulo" "palco" "nav" "pos" "desc";
   justify-items: center; align-content: start; gap: 0;
   box-sizing: border-box; min-height: 100%; padding: clamp(12px, 1.6vw, 22px) clamp(20px, 4vw, 64px) clamp(12px, 1.6vw, 22px); /* 2.30: respiros menores — a tela principal ganha a altura */
@@ -176,15 +185,18 @@ html.galeria-aberta { overflow: hidden; }
   font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; cursor: pointer;
   transition: border-color .25s ease, background-color .25s ease, color .25s ease;
 }
-.galeria-seta:hover, .galeria-ampliar:hover { border-color: var(--g-acc); background: var(--g-acc); color: var(--g-bg); }
+@media (hover: hover) { .galeria-seta:hover, .galeria-ampliar:hover { border-color: var(--g-acc); background: var(--g-acc); color: var(--g-bg); } }
+/* toque: retorno só enquanto o dedo está em cima (o hover grudava e a seta parecia presa); "Reduzir tela" marca o estado */
+.galeria-seta:active, .galeria-ampliar:active, .galeria-ampliar.is-on { border-color: var(--g-acc); background: var(--g-acc); color: var(--g-bg); }
 /* 2.34: o Fechar deixa de ser uma pílula de contorno (competia com as setas redondas e ficava solta no canto):
    vira a seta oficial da marca apontando de volta, com o rótulo ao lado em caixa normal */
 .galeria-fechar { gap: 12px; min-width: 0; padding: 0 6px 0 0; border: 0; background: transparent; color: var(--g-fg); font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .galeria-fechar .gf-seta { width: 40px; height: 40px; flex: none; fill: var(--g-acc); stroke: none; transform: rotate(180deg); transition: transform .3s var(--ease), fill .25s ease; }
-.galeria-fechar:hover { background: transparent; color: var(--g-fg); }
-.galeria-fechar:hover .gf-seta { transform: rotate(180deg) translateX(4px); fill: var(--g-fg); }
-.galeria-fechar:focus-visible { border-radius: 999px; }
-@media (prefers-reduced-motion: reduce) { .galeria-fechar .gf-seta { transition: fill .25s ease; } .galeria-fechar:hover .gf-seta { transform: rotate(180deg); } }
+@media (hover: hover) {
+  .galeria-fechar:hover { background: transparent; color: var(--g-fg); }
+  .galeria-fechar:hover .gf-seta { transform: rotate(180deg) translateX(4px); fill: var(--g-fg); }
+}
+@media (prefers-reduced-motion: reduce) { .galeria-fechar:hover .gf-seta { transform: rotate(180deg); } }
 .galeria-seta svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .galeria-seta { padding: 0; width: 48px; }
 
@@ -193,7 +205,7 @@ html.galeria-aberta { overflow: hidden; }
 
 /* palco: tela + legenda, centrados. 2.30: a largura é calculada pelo JS (ajusta) a partir da largura E da altura reais
    disponíveis; este valor é só o ponto de partida antes da medição */
-.galeria-palco { grid-area: palco; min-width: 0; max-width: 100%; display: grid; gap: 10px; width: min(100%, 960px); touch-action: pan-y; }
+.galeria-palco { grid-area: palco; min-width: 0; max-width: 100%; display: grid; gap: 10px; width: min(100%, 960px); touch-action: pan-y; touch-action: pan-y pinch-zoom; }
 .galeria-moldura {
   border-radius: 14px; overflow: hidden; background: var(--g-soft);
   box-shadow: 0 0 0 1px var(--g-line), 0 18px 44px rgba(0, 0, 0, .24);
@@ -230,6 +242,9 @@ html.galeria-aberta { overflow: hidden; }
 .galeria.is-paisagem .galeria-nav { width: 100%; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px 8px; margin-top: 0; }
 .galeria.is-paisagem .galeria-anel { --ga-w: clamp(90px, 10vw, 150px); }
 .galeria.is-paisagem .ga-palco { height: calc(var(--ga-w) * .86 + 28px); }
+/* deitado e ainda sem altura (568×320): o anel encolhe mais um pouco dentro da coluna da direita */
+.galeria.is-paisagem.is-anel-compacto .galeria-anel { --ga-w: clamp(76px, 8vw, 120px); }
+.galeria.is-paisagem.is-anel-compacto .ga-palco { height: calc(var(--ga-w) * .86 + 24px); }
 .galeria.is-paisagem .galeria-desc { align-self: start; margin-top: 8px; font-size: 14px; max-width: none; }
 .galeria.is-paisagem .galeria-topo { margin-bottom: 8px; }
 .galeria-seta[data-dir="-1"] { grid-area: prev; } .galeria-seta[data-dir="1"] { grid-area: next; }
@@ -248,12 +263,11 @@ html.galeria-aberta { overflow: hidden; }
   .galeria-ampliar { display: none; }
   .galeria-desc { margin-top: 16px; max-width: 52ch; }
   /* "Ampliar tela": a captura desktop fica pequena no celular; ampliada, rola dentro da moldura nos dois eixos e a troca por arrasto é suspensa */
-  .galeria-tela.is-zoom { overflow: auto; touch-action: pan-x pan-y; overscroll-behavior: contain; }
+  .galeria-tela.is-zoom { overflow: auto; touch-action: pan-x pan-y; touch-action: pan-x pan-y pinch-zoom; overscroll-behavior: contain; }
   .galeria-tela.is-zoom img { display: none; }
   .galeria-tela.is-zoom img.is-on { display: block; position: static; width: 240%; height: auto; transform: none; transition: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .galeria[open], .galeria.is-closing { animation: none; }
   .galeria-tela img { transform: none; transition: none; }
 }
 /* "Ampliar tela" só onde faz sentido: tela estreita E toque (no notebook com janela estreita a linha extra só roubava altura) */
@@ -268,7 +282,7 @@ html.js .pasta-pilha { cursor: pointer; }
 .galeria-anel { grid-area: anel; position: relative; min-width: 0; --ga-w: clamp(140px, 12.5vw, 200px); }
 .galeria-anel[hidden] { display: none; }
 .ga-regua { position: absolute; left: 0; top: 0; width: var(--ga-w); height: 0; visibility: hidden; pointer-events: none; }
-.ga-palco { position: relative; height: calc(var(--ga-w) * .86 + 44px); /* painel da frente (0,625) + o que a inclinação baixa a frente (≈ 0,3) + a faixa de trás que sobe */ perspective: 1100px; perspective-origin: 50% 62%; overflow: hidden; touch-action: pan-y; cursor: grab; }
+.ga-palco { position: relative; height: calc(var(--ga-w) * .86 + 44px); /* painel da frente (0,625) + o que a inclinação baixa a frente (≈ 0,3) + a faixa de trás que sobe */ perspective: 1100px; perspective-origin: 50% 62%; overflow: hidden; touch-action: pan-y; touch-action: pan-y pinch-zoom; cursor: grab; -webkit-user-select: none; user-select: none; }
 .galeria-anel.is-arrastando .ga-palco { cursor: grabbing; }
 .ga-giro, .ga-painel { position: absolute; left: 50%; top: calc(100% - var(--ga-w) * .62 - 18px); width: 0; height: 0; transform-style: preserve-3d; }
 .ga-painel { left: 0; top: 0; }
@@ -282,13 +296,17 @@ html.js .pasta-pilha { cursor: pointer; }
 /* 2.30: em janela baixa o anel não some mais — encolhe (.is-anel-compacto / .is-paisagem, pelo JS); só com movimento reduzido ele sai */
 @media (prefers-reduced-motion: reduce) { .galeria-anel { display: none; } .galeria-nav { grid-template-columns: 48px 32px 48px; justify-content: center; } }
 
-/* ---------- 5. Projetos em carrossel de capas (o JS monta a janela, posiciona as capas e cria os controles) ----------
+/* ---------- 5. Projetos em carrossel de capas (o JS monta a janela, posiciona as capas e cria as setas) ----------
    Referência do Walter: a tela do projeto da vez grande no centro e as vizinhas menores, um pouco mais baixas, levemente
    giradas e escurecidas, saindo pelas bordas. Nada de pasta nem folhas aqui: a capa (janela de navegador com a captura)
-   é o cartão. Nome, tipo, resumo e "Explorar projeto" aparecem só sob a capa do centro. Clicar na capa do centro abre a
-   galeria em tela cheia de sempre; clicar numa vizinha traz ela para o centro. Sem JS: a grade de pastas. */
-.pastas-janela { --cw: min(56vw, 900px); position: relative; overflow: hidden; margin-inline: calc(-1 * var(--pad-x)); padding-block: 12px 4px; touch-action: pan-y; cursor: grab; } /* --cw na janela: a lista e as setas (irmãs) leem a mesma largura de capa */
+   é o cartão. Sob a capa do centro aparece só o nome do projeto, que abre a galeria em tela cheia (a capa também abre);
+   clicar numa vizinha traz ela para o centro. Sem JS: a grade de pastas.
+   A largura da capa (--cw) também respeita a altura da janela: no celular deitado a capa cabia só pela largura e
+   passava da altura útil. O arraste horizontal é do script; rolagem vertical e pinça continuam do navegador. */
+.pastas-janela { --cw: min(56vw, 900px); position: relative; overflow: hidden; margin-inline: calc(-1 * var(--pad-x)); padding-block: 12px 4px; touch-action: pan-y; touch-action: pan-y pinch-zoom; cursor: grab; -webkit-user-select: none; user-select: none; } /* --cw na janela: a lista e as setas (irmãs) leem a mesma largura de capa */
 .pastas-janela.is-dragging { cursor: grabbing; }
+/* página ampliada com pinça (html.is-pinca, pelo JS): o arraste horizontal desloca a vista ampliada, não troca projeto nem tela */
+html.is-pinca .pastas-janela, html.is-pinca .galeria-palco, html.is-pinca .ga-palco, html.is-pinca .carousel.is-live .carousel-viewport { touch-action: pan-x pan-y pinch-zoom; }
 .pastas.is-slider { display: block; position: relative; max-width: none; margin: 0; }
 .pastas.is-slider > .pasta {
   position: absolute; left: 50%; top: 0; width: var(--cw); margin-left: calc(var(--cw) / -2);
@@ -308,17 +326,29 @@ html.js .pasta-pilha { cursor: pointer; }
 .pastas.is-slider .pasta-rotulo, .pastas.is-slider .pasta-resumo { display: none; }
 html.tem-dialog .pastas.is-slider .pasta-detalhes { display: none; } /* só some quando a galeria em <dialog> existe (senão o <details> é o único caminho para as telas) */
 .pasta-abrir { display: inline-block; padding: 2px 6px; margin: -2px -6px; border: 0; border-radius: 10px; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; cursor: pointer; transition: color .25s ease; }
-.pasta-abrir:hover { color: var(--aba); }
+@media (hover: hover) { .pasta-abrir:hover { color: var(--aba); } }
+@media (pointer: coarse) { .pasta-abrir { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; } } /* alvo de toque de 44 px */
 .pasta-abrir:focus-visible { outline: 3px solid var(--sf-lime); outline-offset: 2px; }
 /* setas: uma de cada lado da capa do centro, sobre a janela (nada de barra vazia no alto); o anúncio para leitor de tela vai junto */
 .pastas-nav { position: absolute; left: var(--pad-x); right: var(--pad-x); top: calc(12px + var(--cw) * .33); height: 0; display: flex; align-items: center; justify-content: space-between; pointer-events: none; z-index: 20; }
 #projetos { padding-bottom: clamp(36px, 4vw, 64px); }
-.pastas-seta { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; padding: 0; border: 2px solid rgba(255, 255, 255, .5); border-radius: 50%; background: rgba(4, 43, 32, .55); color: #fff; cursor: pointer; backdrop-filter: blur(4px); transition: border-color .3s ease, color .3s ease, transform .3s var(--ease); }
+.pastas-seta { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; padding: 0; border: 2px solid rgba(255, 255, 255, .5); border-radius: 50%; background: rgba(4, 43, 32, .55); color: #fff; cursor: pointer; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); transition: border-color .3s ease, color .3s ease, transform .3s var(--ease); }
 .pastas-seta svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.pastas-seta:hover { border-color: var(--sf-lime); color: var(--sf-lime); }
-.pastas-seta:active { transform: scale(.94); }
+@media (hover: hover) { .pastas-seta:hover { border-color: var(--sf-lime); color: var(--sf-lime); } }
+.pastas-seta:active { transform: scale(.94); border-color: var(--sf-lime); color: var(--sf-lime); }
 /* telas pequenas: capas um pouco menores, setas de 44 px nas faixas laterais (as vizinhas), sem cobrir a capa do centro */
-@media (max-width: 760px) { .pastas-janela { --cw: 72vw; } .pastas-nav { left: max(4px, calc(50% - var(--cw) / 2 - 46px)); right: max(4px, calc(50% - var(--cw) / 2 - 46px)); }
-  @media (max-width: 480px) { .pastas-janela { --cw: 68vw; } }
-  @media (max-width: 360px) { .pastas-janela { --cw: 64vw; } } /* em 320 px as setas de 44 px precisam de 50 px de cada lado */ .pastas-seta { width: 44px; height: 44px; } .pastas-seta svg { width: 20px; height: 20px; } }
+@media (max-width: 760px) {
+  .pastas-janela { --cw: 72vw; }
+  .pastas-nav { left: max(4px, calc(50% - var(--cw) / 2 - 46px)); right: max(4px, calc(50% - var(--cw) / 2 - 46px)); }
+  .pastas-seta { width: 44px; height: 44px; }
+  .pastas-seta svg { width: 20px; height: 20px; }
+}
+@media (max-width: 480px) { .pastas-janela { --cw: 68vw; } }
+@media (max-width: 360px) { .pastas-janela { --cw: 64vw; } } /* em 320 px as setas de 44 px precisam de 50 px de cada lado */
+@supports (height: 100svh) {
+  .pastas-janela { --cw: min(56vw, 900px, calc((100svh - 150px) * 1.6)); }
+  @media (max-width: 760px) { .pastas-janela { --cw: min(72vw, calc((100svh - 150px) * 1.6)); } }
+  @media (max-width: 480px) { .pastas-janela { --cw: min(68vw, calc((100svh - 150px) * 1.6)); } }
+  @media (max-width: 360px) { .pastas-janela { --cw: min(64vw, calc((100svh - 150px) * 1.6)); } }
+}
 @media print { .pastas.is-slider { display: grid; height: auto !important; } .pastas.is-slider > .pasta { position: static; width: auto; margin: 0; transform: none !important; filter: none !important; opacity: 1 !important; } .pastas.is-slider .pasta-info { opacity: 1; transform: none; } .pastas-nav { display: none; } }
